@@ -39,4 +39,10 @@ public abstract class Audit {
         createdBy = username;
         lastModifiedBy = username;
     }
+
+    public void updateDeleted(String username) {
+        deletedBy = username;
+        deletedAt = LocalDateTime.now();
+        deleted = true;
+    }
 }

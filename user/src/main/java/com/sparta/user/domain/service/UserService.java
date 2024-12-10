@@ -1,5 +1,6 @@
 package com.sparta.user.domain.service;
 
+import com.sparta.user.config.AuditAwareImpl;
 import com.sparta.user.domain.dto.request.SignupRequestDto;
 import com.sparta.user.domain.dto.request.UpdateUserRequestDto;
 import com.sparta.user.domain.dto.response.UserResponseDto;
@@ -22,6 +23,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditAwareImpl auditAware;
 
     @Transactional
     public UsernameResponseDto signup(@Valid SignupRequestDto requestDto) {
@@ -67,6 +69,22 @@ public class UserService {
         validateDeletedUser(user);
 
         user.updateUser(requestDto.getNickname(), requestDto.getSlackId());
+
+        return UsernameResponseDto.builder()
+                .username(user.getUsername())
+                .build();
+    }
+
+    @Transactional
+    public UsernameResponseDto deleteUser(UserRoleEnum requestRole, String username) {
+        validateRequestRoleIsMaster(requestRole);
+
+        User user = userRepository.findById(username)
+                .orElseThrow(() -> new IllegalArgumentException(UserExceptionMessage.USER_NOT_FOUND.getMessage()));
+
+        validateDeletedUser(user);
+
+        user.updateDeleted(auditAware.getCurrentAuditor().orElseThrow());
 
         return UsernameResponseDto.builder()
                 .username(user.getUsername())

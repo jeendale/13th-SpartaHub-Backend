@@ -1,8 +1,9 @@
 package com.sparta.user.domain.service;
 
-import com.sparta.user.domain.dto.SignupRequestDto;
-import com.sparta.user.domain.dto.UserResponseDto;
-import com.sparta.user.domain.dto.UsernameResponseDto;
+import com.sparta.user.domain.dto.request.SignupRequestDto;
+import com.sparta.user.domain.dto.request.UpdateUserRequestDto;
+import com.sparta.user.domain.dto.response.UserResponseDto;
+import com.sparta.user.domain.dto.response.UsernameResponseDto;
 import com.sparta.user.exception.UserExceptionMessage;
 import com.sparta.user.model.entity.User;
 import com.sparta.user.model.entity.UserRoleEnum;
@@ -10,7 +11,6 @@ import com.sparta.user.model.repository.UserRepository;
 import jakarta.validation.Valid;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +22,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuditorAware<String> auditorAware;
 
     @Transactional
     public UsernameResponseDto signup(@Valid SignupRequestDto requestDto) {
@@ -52,6 +51,24 @@ public class UserService {
         validateDeletedUser(user);
 
         return UserResponseDto.from(user);
+    }
+
+    @Transactional
+    public UsernameResponseDto updateUser(
+            UserRoleEnum requestRole,
+            String username,
+            @Valid UpdateUserRequestDto requestDto) {
+
+        validateRequestRoleIsMaster(requestRole);
+
+        User user = userRepository.findById(username)
+                .orElseThrow(() -> new IllegalArgumentException(UserExceptionMessage.USER_NOT_FOUND.getMessage()));
+
+        user.updateUser(requestDto.getNickname(), requestDto.getSlackId());
+
+        return UsernameResponseDto.builder()
+                .username(user.getUsername())
+                .build();
     }
 
     private void validateUsername(String username) {

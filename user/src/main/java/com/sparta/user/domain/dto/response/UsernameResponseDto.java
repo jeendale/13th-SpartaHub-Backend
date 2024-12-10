@@ -1,4 +1,4 @@
-package com.sparta.user.domain.dto;
+package com.sparta.user.domain.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

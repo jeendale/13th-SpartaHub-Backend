@@ -19,7 +19,7 @@ import org.springframework.web.server.ServerWebExchange;
 @Slf4j(topic = "JwtUtil")
 @Component
 public class JwtUtil {
-    @Value("${jwt.secret.key}") // Base64 Encode 한 SecretKey
+    @Value("${service.jwt.secret-key}") // Base64 Encode 한 SecretKey
     private String secretKey;
     private Key key;
 

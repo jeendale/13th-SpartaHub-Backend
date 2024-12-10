@@ -11,6 +11,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class HubCreateReq {
+public class CreateHubReq {
     private UUID hubUId;
 }

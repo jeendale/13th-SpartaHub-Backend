@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,4 +31,7 @@ public class SlackHistory extends Audit{
     @Lob
     @Column(nullable = false)
     private String message;
+
+    @Column(nullable = false)
+    private LocalDateTime sentAt;
 }

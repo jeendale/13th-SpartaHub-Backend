@@ -17,5 +17,9 @@ eureka:
     service-url:
       defaultZone: http://localhost:19090/eureka/
 
+service:
+  slack:
+    request-url: ${SLACK_REQUEST_URL}
+
 server:
-  port: 19092
+  port: 19093

@@ -23,4 +23,4 @@ service:
     secret-key: ${JWT_SECRET_KEY}
 
 server:
-  port: 19095
+  port: 19092

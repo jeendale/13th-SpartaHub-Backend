@@ -16,7 +16,7 @@ public class AuditAwareImpl implements AuditorAware<String> {
 
         if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
             HttpServletRequest request = servletRequestAttributes.getRequest();
-            String usernameHeader = request.getHeader("X-Username");
+            String usernameHeader = request.getHeader("X-User-Username");
 
             if (usernameHeader != null) {
                 return Optional.of(usernameHeader);

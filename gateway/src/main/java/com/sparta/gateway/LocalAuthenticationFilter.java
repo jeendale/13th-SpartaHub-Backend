@@ -40,8 +40,8 @@ public class LocalAuthenticationFilter implements GlobalFilter {
         // 토큰 검증 성공 시 헤더 덮어쓰기
         Claims claims = jwtUtil.parseClaims(token);
         exchange.getRequest().mutate()
-                .header("X-User-Id", claims.get("username", String.class))
-                .header("X-User-Roles", claims.get("role", String.class))
+                .header("X-User-Username", claims.get("username", String.class))
+                .header("X-User-Role", claims.get("role", String.class))
                 .build();
 
         return chain.filter(exchange);

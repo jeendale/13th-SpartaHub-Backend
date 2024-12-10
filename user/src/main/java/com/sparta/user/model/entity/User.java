@@ -32,4 +32,9 @@ public class User extends Audit{
 
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
+
+    public void updateUser(String nickname, String slackId) {
+        this.nickname = nickname;
+        this.slackId = slackId;
+    }
 }

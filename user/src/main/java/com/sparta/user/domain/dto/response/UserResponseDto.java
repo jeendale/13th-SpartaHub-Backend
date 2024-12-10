@@ -1,4 +1,4 @@
-package com.sparta.user.domain.dto;
+package com.sparta.user.domain.dto.response;
 
 import com.sparta.user.model.entity.User;
 import com.sparta.user.model.entity.UserRoleEnum;

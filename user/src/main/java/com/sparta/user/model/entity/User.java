@@ -2,6 +2,8 @@ package com.sparta.user.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -28,5 +30,6 @@ public class User extends Audit{
     @Column(unique = true)
     private String slackId;
 
+    @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
 }

@@ -64,6 +64,8 @@ public class UserService {
         User user = userRepository.findById(username)
                 .orElseThrow(() -> new IllegalArgumentException(UserExceptionMessage.USER_NOT_FOUND.getMessage()));
 
+        validateDeletedUser(user);
+
         user.updateUser(requestDto.getNickname(), requestDto.getSlackId());
 
         return UsernameResponseDto.builder()

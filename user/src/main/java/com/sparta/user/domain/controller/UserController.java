@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,6 +53,16 @@ public class UserController {
             @PathVariable String username) {
 
         UsernameResponseDto responseDto = userService.updateUser(requestRole, username, requestDto);
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+    }
+
+    @DeleteMapping("/{username}")
+    public ResponseEntity<UsernameResponseDto> deleteUser(
+            @RequestHeader("X-User-Role") UserRoleEnum requestRole,
+            @PathVariable String username) {
+
+        UsernameResponseDto responseDto = userService.deleteUser(requestRole, username);
 
         return ResponseEntity.status(HttpStatus.OK).body(responseDto);
     }

@@ -51,6 +51,8 @@ public class SlackService {
                         () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
                 );
 
+        validateDeleted(slackHistory);
+
         return SlackHistoryResponseDto.builder()
                 .slackHistoryId(slackHistory.getSlackHistoryId())
                 .username(slackHistory.getUsername())
@@ -69,6 +71,8 @@ public class SlackService {
                         () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
                 );
 
+        validateDeleted(slackHistory);
+
         slackHistory.updateMessage(requestDto.getMessage());
 
         return SlackHistoryIdResponseDto.builder()
@@ -85,6 +89,8 @@ public class SlackService {
                         () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
                 );
 
+        validateDeleted(slackHistory);
+
         slackHistory.updateDeleted(requestUsername);
 
         return SlackHistoryIdResponseDto.builder()
@@ -95,6 +101,12 @@ public class SlackService {
     private void validateRequestRole(String requestRole) {
         if (!requestRole.equals("MASTER")) {
             throw new IllegalArgumentException(SlackExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+    }
+
+    private void validateDeleted(SlackHistory slackHistory) {
+        if (slackHistory.isDeleted()) {
+            throw new IllegalArgumentException(SlackExceptionMessage.DELETED_SLACK_HISTORY.getMessage());
         }
     }
 }

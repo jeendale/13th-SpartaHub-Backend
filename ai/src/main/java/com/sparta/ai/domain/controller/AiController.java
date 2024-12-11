@@ -1,11 +1,15 @@
 package com.sparta.ai.domain.controller;
 
+import com.sparta.ai.domain.dto.response.AiMessageResponseDto;
 import com.sparta.ai.domain.dto.request.AiMessageRequestDto;
 import com.sparta.ai.domain.dto.response.AiMessageIdResponseDto;
 import com.sparta.ai.domain.service.AiService;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,5 +32,15 @@ public class AiController {
         AiMessageIdResponseDto responseDto = aiService.createAiMessage(requestDto, requestUsername, requestRole);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+    }
+
+    @GetMapping("{aiMessageId}")
+    public ResponseEntity<AiMessageResponseDto> getAiMessages(
+            @PathVariable UUID aiMessageId,
+            @RequestHeader("X-User-Role") String requestRole) {
+
+        AiMessageResponseDto responseDto = aiService.getAiMessage(aiMessageId, requestRole);
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
     }
 }

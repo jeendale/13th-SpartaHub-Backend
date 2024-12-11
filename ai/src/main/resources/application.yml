@@ -1,6 +1,6 @@
 spring:
   application:
-    name: slack-service
+    name: ai-service
   profiles:
     active: ${ACTIVE}
   datasource:

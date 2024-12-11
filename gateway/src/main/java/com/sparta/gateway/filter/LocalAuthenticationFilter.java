@@ -1,4 +1,4 @@
-package com.sparta.gateway;
+package com.sparta.gateway.filter;
 
 import com.sparta.gateway.jwt.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -21,12 +21,14 @@ public class LocalAuthenticationFilter implements GlobalFilter {
         String path = exchange.getRequest().getURI().getPath();
 
         // 헤더 초기화: 검증 전 기본값 설정
-        exchange.getRequest().mutate()
-                .header("X-User-Username", "null")
-                .header("X-User-Role", "null")
+        exchange = exchange.mutate()
+                .request(exchange.getRequest().mutate()
+                        .header("X-User-Username", "null")
+                        .header("X-User-Role", "null")
+                        .build())
                 .build();
 
-        if (path.equals("/auth/login") || path.equals("/auth/sign-up")) {
+        if (path.equals("/api/v1/auth") || path.equals("/api/v1/users/signup")) {
             return chain.filter(exchange);
         }
 
@@ -39,9 +41,12 @@ public class LocalAuthenticationFilter implements GlobalFilter {
 
         // 토큰 검증 성공 시 헤더 덮어쓰기
         Claims claims = jwtUtil.parseClaims(token);
-        exchange.getRequest().mutate()
-                .header("X-User-Username", claims.get("username", String.class))
-                .header("X-User-Role", claims.get("role", String.class))
+        // 새 요청 객체를 만들어서 헤더를 설정하고, 기존 exchange의 요청으로 교체
+        exchange = exchange.mutate()
+                .request(exchange.getRequest().mutate()
+                        .header("X-User-Username", claims.get("username", String.class))
+                        .header("X-User-Role", claims.get("role", String.class))
+                        .build())
                 .build();
 
         return chain.filter(exchange);

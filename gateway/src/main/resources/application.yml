@@ -12,35 +12,35 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/users/**, /auth/**
+            - Path=/api/v1/users/**, /api/v1/auth/**
         - id: ai-service
           uri: lb://ai-service
           predicates:
-            - Path=/ai-messages/**
+            - Path=/api/v1/ai-messages/**
         - id: slack-service
           uri: lb://slack-service
           predicates:
-            - Path=/slack/**
+            - Path=/api/v1/slack/**
         - id: hub-service
           uri: lb://hub-service
           predicates:
-            - Path=/hubs/**, /hubroutes/**
+            - Path=/api/v1/hubs/**, /api/v1/hubroutes/**
         - id: shipment-service
           uri: lb://shipment-service
           predicates:
-            - Path=/shipments/**, shipment-managers/**, shipment-routes/**
+            - Path=/api/v1/shipments/**, /api/v1/shipment-managers/**, /api/v1/shipment-routes/**
         - id: company-service
           uri: lb://company-service
           predicates:
-            - Path=/companies/**
+            - Path=/api/v1/companies/**
         - id: product-service
           uri: lb://product-service
           predicates:
-            - Path=/products/**
+            - Path=/api/v1/products/**
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/orders/**
+            - Path=/api/v1/orders/**
 
 service:
   jwt:

@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: slack-service
+  profiles:
+    active: ${ACTIVE}
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19090/eureka/
+
+service:
+  gemini:
+    request-url: ${GEMINI_REQUEST_URL}
+    api-key: ${GEMINI_API_KEY}
+
+server:
+  port: 19094

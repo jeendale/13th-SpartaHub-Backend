@@ -2,7 +2,7 @@ package com.sparta.shipment.domain.service;
 
 import com.sparta.shipment.domain.dto.CreateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.ShipmentManagerResponseDto;
-import com.sparta.shipment.model.entity.ManagerTypeEnum;
+import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;
 import jakarta.persistence.EntityManager;
@@ -22,9 +22,12 @@ public class ShipmentManagerService {
     private final ShipmentManagerRepository shipmentManagerRepository;
 
     @Transactional
-    public ShipmentManagerResponseDto createShipmentManager(CreateShipmentManagerRequestDto request) {
+    public ShipmentManagerResponseDto createShipmentManager(CreateShipmentManagerRequestDto request,
+                                                            String requestUsername,
+                                                            String requestRole) {
 
-        ManagerTypeEnum.fromString(request.getManagerType());
+        validateRequestRole(requestRole);
+
         // TODO: user와 연결해서 username값 있는지, 해당 username 권한이 SHIPMENT_MANAGER 인지 확인
         // TODO: HUB와 연결해서 hubId 있는지 확인, 허브 담당자 권한일 시 내 담당 허브인지 확인
 
@@ -39,6 +42,7 @@ public class ShipmentManagerService {
             ShipmentManager shipmentManager = ShipmentManager.create(shipmentManagerId, request.getUsername(),
                     request.getInHubId(), request.getManagerType(), shipmentSeq);
 
+            shipmentManager.updateCreatedByAndLastModifiedBy(requestUsername);
             shipmentManagerRepository.save(shipmentManager);
 
             return ShipmentManagerResponseDto.of(shipmentManager);
@@ -47,6 +51,21 @@ public class ShipmentManagerService {
             throw e;  // 예외를 다시 던져 트랜잭션 롤백
         }
 
+    }
+
+    @Transactional
+    public ShipmentManagerResponseDto deleteShipmentManager(UUID shipmentManagerId, String requestUsername,
+                                                            String requestRole) {
+        validateRequestRole(requestRole);
+
+        ShipmentManager shipmentManager = shipmentManagerRepository.findActiveByShipmentManagerId(
+                        shipmentManagerId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        ShipmentManagerExceptionMessage.NOT_FOUND_DELETE.getMessage()));
+
+        shipmentManager.updateDeleted(requestUsername);
+
+        return ShipmentManagerResponseDto.of(shipmentManager);
     }
 
     private int getNextSequence(String managerType) {
@@ -69,4 +88,10 @@ public class ShipmentManagerService {
                 .executeUpdate();
     }
 
+    // 요청 헤더의 role이 MASTER인지 검증하는 메서드
+    private void validateRequestRole(String requestRole) {
+        if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
+            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+    }
 }

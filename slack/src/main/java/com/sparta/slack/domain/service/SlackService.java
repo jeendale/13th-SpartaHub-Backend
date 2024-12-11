@@ -8,6 +8,7 @@ import com.sparta.slack.model.repository.SlackRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +17,7 @@ public class SlackService {
     private final SlackRepository slackRepository;
     private final SlackClientService slackClientService;
 
+    @Transactional
     public SlackHistoryIdResponseDto createSlackMessage(String requestUsername, SlackRequestDto requestDto) {
         slackClientService.sendMessage(SlackClientRequestDto.builder()
                 .channel(requestDto.getRecivedSlackId())
@@ -24,6 +26,7 @@ public class SlackService {
 
         SlackHistory slackHistory = SlackHistory.builder()
                 .username(requestUsername)
+                .recievedSlackId(requestDto.getRecivedSlackId())
                 .message(requestDto.getMessage())
                 .sentAt(LocalDateTime.now())
                 .build();

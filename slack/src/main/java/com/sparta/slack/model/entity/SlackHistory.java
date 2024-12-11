@@ -27,6 +27,9 @@ public class SlackHistory extends Audit{
     @Column(nullable = false)
     private String username;
 
+    @Column(nullable = false)
+    private String recievedSlackId;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String message;
 

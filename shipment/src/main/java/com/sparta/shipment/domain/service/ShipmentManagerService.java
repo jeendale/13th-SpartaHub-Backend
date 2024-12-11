@@ -1,7 +1,9 @@
 package com.sparta.shipment.domain.service;
 
 import com.sparta.shipment.domain.dto.CreateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.ShipmentManagerResponseDto;
+import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
 import com.sparta.shipment.domain.dto.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.model.entity.ShipmentManager;
@@ -10,6 +12,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,24 +91,39 @@ public class ShipmentManagerService {
 
     }
 
+    @Transactional
+    public GetShipmentManagerResponseDto getShipmentManagerById(UUID shipmentManagerId, String requestUsername,
+                                                                String requestRole) {
+
+        validateRequestRole(requestRole, "GET");
+        ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
+
+        return GetShipmentManagerResponseDto.of(shipmentManager);
+    }
+
+    @Transactional
+    public Page<GetShipmentManagerResponseDto> getShipmentManagers(ShipmentManagerSearchDto searchDto,
+                                                                   Pageable pageable, String requestUsername,
+                                                                   String requestRole) {
+        validateRequestRole(requestRole, "GET");
+
+        return shipmentManagerRepository.searchShipmentManagers(searchDto, pageable);
+    }
+
     private int getNextSequence(String managerType) {
 
         String sequenceName = managerType.equals("HUB_SHIPMENT") ? "shipment_seq_hub" : "shipment_seq_comp";
         // PostgreSQL에서 시퀀스를 가져오는 SQL
-        String sql = "SELECT NEXTVAL(:sequenceName)";
+        String sql = "SELECT NEXTVAL('" + sequenceName + "')";
         return ((Number) entityManager.createNativeQuery(sql)
-                .setParameter("sequenceName", sequenceName)
                 .getSingleResult()).intValue();
     }
 
     // 시퀀스 롤백
     private void rollbackSequence(String managerType, int shipmentSeq) {
         String sequenceName = managerType.equals("HUB_SHIPMENT") ? "shipment_seq_hub" : "shipment_seq_comp";
-        String sql = "SELECT setval(:sequenceName, :initialSeq)";
-        entityManager.createNativeQuery(sql)
-                .setParameter("sequenceName", sequenceName)
-                .setParameter("initialSeq", shipmentSeq)
-                .executeUpdate();
+        String sql = "SELECT setval('" + sequenceName + "', " + shipmentSeq + ")";
+        entityManager.createNativeQuery(sql).executeUpdate();
     }
 
     // 요청 헤더의 role이 MASTER인지 검증하는 메서드
@@ -115,7 +134,7 @@ public class ShipmentManagerService {
             if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
                 throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
             }
-        } else if (actionType.equals("READ")) {
+        } else if (actionType.equals("GET")) {
             // 'READ' 작업은 'MASTER', 'HUB_MANAGER', 'SHIPMENT_MANAGER' 모두 허용
             if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER") && !requestRole.equals(
                     "SHIPMENT_MANAGER")) {
@@ -134,6 +153,4 @@ public class ShipmentManagerService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         ShipmentManagerExceptionMessage.NOT_FOUND_DELETE.getMessage()));
     }
-
-
 }

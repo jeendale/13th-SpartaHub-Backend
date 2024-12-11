@@ -7,7 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ShipmentManagerRepository extends JpaRepository<ShipmentManager, UUID> {
+public interface ShipmentManagerRepository extends JpaRepository<ShipmentManager, UUID>,
+        ShipmentManagerRepositoryCustom {
 
     @Query("SELECT sm FROM ShipmentManager sm " +
             "WHERE sm.shipmentManagerId = :shipmentManagerId " +

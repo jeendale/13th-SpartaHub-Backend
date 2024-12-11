@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 public class ShipmentManagerResponseDto {
     private UUID shipmentManagerId;
 
-    // Order -> OrderResponse 변경 Static 메서드
-    public static ShipmentManagerResponseDto of(final ShipmentManager shipmentManager) {
+
+    public static ShipmentManagerResponseDto of(ShipmentManager shipmentManager) {
         return ShipmentManagerResponseDto.builder()
                 .shipmentManagerId(shipmentManager.getShipmentManagerId())
                 .build();

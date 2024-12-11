@@ -1,15 +1,21 @@
 package com.sparta.shipment.domain.controller;
 
 import com.sparta.shipment.domain.dto.CreateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.ShipmentManagerResponseDto;
+import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
 import com.sparta.shipment.domain.dto.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.service.ShipmentManagerService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,5 +61,26 @@ public class ShipmentManagerController {
         ShipmentManagerResponseDto response = shipmentManagerService.updateShipmentManager(shipmentManagerId, request,
                 requestUsername, requestRole);
         return ResponseEntity.status(HttpStatus.OK).body((response));
+    }
+
+    @GetMapping("/{shipmentManagerId}")
+    public ResponseEntity<GetShipmentManagerResponseDto> getShipmentManagerById(@PathVariable UUID shipmentManagerId,
+                                                                                @RequestHeader("X-User-Username") String requestUsername,
+                                                                                @RequestHeader("X-User-Role") String requestRole) {
+        GetShipmentManagerResponseDto response = shipmentManagerService.getShipmentManagerById(shipmentManagerId,
+                requestUsername, requestRole);
+        return ResponseEntity.status(HttpStatus.OK).body((response));
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedModel<GetShipmentManagerResponseDto>> getShipmentManagers(
+            ShipmentManagerSearchDto searchDto,
+            Pageable pageable,
+            @RequestHeader("X-User-Username") String requestUsername,
+            @RequestHeader("X-User-Role") String requestRole) {
+        Page<GetShipmentManagerResponseDto> response = shipmentManagerService.getShipmentManagers(searchDto,
+                pageable, requestUsername, requestRole);
+
+        return ResponseEntity.status(HttpStatus.OK).body((new PagedModel<>(response)));
     }
 }

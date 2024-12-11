@@ -1,6 +1,7 @@
 package com.sparta.slack.domain.controller;
 
 import com.sparta.slack.domain.dto.request.SlackRequestDto;
+import com.sparta.slack.domain.dto.request.UpdateSlackHistoryRequestDto;
 import com.sparta.slack.domain.dto.response.SlackHistoryIdResponseDto;
 import com.sparta.slack.domain.dto.response.SlackHistoryResponseDto;
 import com.sparta.slack.domain.service.SlackService;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +41,17 @@ public class SlackController {
             @RequestHeader("X-User-Role") String requestRole) {
 
         SlackHistoryResponseDto responseDto = slackService.getSlackHistory(slackHistoryId, requestRole);
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+    }
+
+    @PutMapping("/{slackHistoryId}")
+    public ResponseEntity<SlackHistoryIdResponseDto> updateSlackHistory(
+            @PathVariable UUID slackHistoryId,
+            @RequestBody UpdateSlackHistoryRequestDto requestDto,
+            @RequestHeader("X-User-Role") String requestRole) {
+
+        SlackHistoryIdResponseDto responseDto = slackService.updateSlackHistory(slackHistoryId, requestDto, requestRole);
 
         return ResponseEntity.status(HttpStatus.OK).body(responseDto);
     }

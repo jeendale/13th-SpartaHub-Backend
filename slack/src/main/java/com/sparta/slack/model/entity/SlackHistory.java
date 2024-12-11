@@ -35,4 +35,8 @@ public class SlackHistory extends Audit{
 
     @Column(nullable = false)
     private LocalDateTime sentAt;
+
+    public void updateMessage(String message) {
+        this.message = message;
+    }
 }

@@ -1,6 +1,7 @@
 package com.sparta.slack.domain.service;
 
 import com.sparta.slack.domain.dto.request.SlackRequestDto;
+import com.sparta.slack.domain.dto.request.UpdateSlackHistoryRequestDto;
 import com.sparta.slack.domain.dto.response.SlackHistoryIdResponseDto;
 import com.sparta.slack.domain.dto.response.SlackHistoryResponseDto;
 import com.sparta.slack.exception.SlackExceptionMessage;
@@ -47,7 +48,8 @@ public class SlackService {
 
         SlackHistory slackHistory = slackRepository.findById(slackHistoryId)
                 .orElseThrow(
-                        () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage()));
+                        () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
+                );
 
         return SlackHistoryResponseDto.builder()
                 .slackHistoryId(slackHistory.getSlackHistoryId())
@@ -58,9 +60,26 @@ public class SlackService {
                 .build();
     }
 
+    @Transactional
+    public SlackHistoryIdResponseDto updateSlackHistory(UUID slackHistoryId, UpdateSlackHistoryRequestDto requestDto, String requestRole) {
+        validateRequestRole(requestRole);
+
+        SlackHistory slackHistory = slackRepository.findById(slackHistoryId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
+                );
+
+        slackHistory.updateMessage(requestDto.getMessage());
+
+        return SlackHistoryIdResponseDto.builder()
+                .slackHistoryId(slackHistory.getSlackHistoryId())
+                .build();
+    }
+
     private void validateRequestRole(String requestRole) {
         if (!requestRole.equals("MASTER")) {
             throw new IllegalArgumentException(SlackExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
     }
+
 }

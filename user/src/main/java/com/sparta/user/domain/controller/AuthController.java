@@ -41,7 +41,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
-    @PostMapping
+    @PostMapping("/login")
     ResponseEntity<JwtTokenResponseDto> login(@RequestBody LoginRequestDto requestDto) {
 
         JwtTokenResponseDto responseDto = authService.login(requestDto);

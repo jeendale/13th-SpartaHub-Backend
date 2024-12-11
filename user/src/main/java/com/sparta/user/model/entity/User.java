@@ -22,15 +22,17 @@ public class User extends Audit{
     @Id
     private String username;
 
+    @Column(nullable = false)
     private String password;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String nickname;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String slackId;
 
     @Enumerated(value = EnumType.STRING)
+    @Column(nullable = false)
     private UserRoleEnum role;
 
     public void updateUser(String nickname, String slackId) {

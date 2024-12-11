@@ -76,10 +76,25 @@ public class SlackService {
                 .build();
     }
 
+    @Transactional
+    public SlackHistoryIdResponseDto deleteSlackHistory(UUID slackHistoryId, String requestUsername, String requestRole) {
+        validateRequestRole(requestRole);
+
+        SlackHistory slackHistory = slackRepository.findById(slackHistoryId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
+                );
+
+        slackHistory.updateDeleted(requestUsername);
+
+        return SlackHistoryIdResponseDto.builder()
+                .slackHistoryId(slackHistory.getSlackHistoryId())
+                .build();
+    }
+
     private void validateRequestRole(String requestRole) {
         if (!requestRole.equals("MASTER")) {
             throw new IllegalArgumentException(SlackExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
     }
-
 }

@@ -49,4 +49,5 @@ public class ShipmentManager extends Audit {
                 .shipmentSeq(shipmentSeq)
                 .build();
     }
+
 }

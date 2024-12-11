@@ -1,6 +1,7 @@
 package com.sparta.ai.domain.service;
 
 import com.sparta.ai.domain.dto.request.AiMessageRequestDto;
+import com.sparta.ai.domain.dto.response.AiMessageCreateResponseDto;
 import com.sparta.ai.domain.dto.response.AiMessageIdResponseDto;
 import com.sparta.ai.domain.dto.response.AiMessageResponseDto;
 import com.sparta.ai.exception.AiExceptionMessage;
@@ -28,8 +29,8 @@ public class AiService {
     private String apiKey;
 
     @Transactional
-    public AiMessageIdResponseDto createAiMessage(AiMessageRequestDto requestDto, String requestUsername,
-                                                  String requestRole) {
+    public AiMessageCreateResponseDto createAiMessage(AiMessageRequestDto requestDto, String requestUsername,
+                                                      String requestRole) {
         validateRequestRole(requestRole);
 
         GeminiClientResponseDto responseDto = geminiClientService.sendPrompt(apiKey,
@@ -48,7 +49,7 @@ public class AiService {
 
         aiMessageRepository.save(aiMessage);
 
-        return AiMessageIdResponseDto.builder()
+        return AiMessageCreateResponseDto.builder()
                 .aiMessageId(aiMessage.getAiMessageId())
                 .content(aiMessage.getContent())
                 .build();
@@ -67,6 +68,22 @@ public class AiService {
                 .username(aiMessage.getUsername())
                 .prompt(aiMessage.getPrompt())
                 .content(aiMessage.getContent())
+                .build();
+    }
+
+    @Transactional
+    public AiMessageIdResponseDto deleteAiMessage(UUID aiMessageId, String requestUsername, String requestRole) {
+        validateRequestRole(requestRole);
+
+        AiMessage aiMessage = aiMessageRepository.findById(aiMessageId)
+                .orElseThrow(() -> new IllegalArgumentException(AiExceptionMessage.AI_MESSAGE_NOT_FOUND.getMessage()));
+
+        validateDeleted(aiMessage);
+
+        aiMessage.updateDeleted(requestUsername);
+
+        return AiMessageIdResponseDto.builder()
+                .aiMessageId(aiMessageId)
                 .build();
     }
 

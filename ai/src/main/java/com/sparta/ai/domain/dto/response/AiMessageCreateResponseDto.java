@@ -6,6 +6,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class AiMessageIdResponseDto {
+public class AiMessageCreateResponseDto {
     private UUID aiMessageId;
+    private String content;
 }

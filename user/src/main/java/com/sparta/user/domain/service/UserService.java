@@ -10,7 +10,6 @@ import com.sparta.user.model.entity.User;
 import com.sparta.user.model.entity.UserRoleEnum;
 import com.sparta.user.model.repository.UserRepository;
 import jakarta.validation.Valid;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -92,22 +91,22 @@ public class UserService {
     }
 
     private void validateUsername(String username) {
-        Optional<User> checkUsername = userRepository.findById(username);
-        if (checkUsername.isPresent()) {
+        boolean checkUsername = userRepository.existsById(username);
+        if (checkUsername) {
             throw new IllegalArgumentException(UserExceptionMessage.DUPLICATED_USERNAME.getMessage());
         }
     }
 
     private void validateNickname(String nickname) {
-        Optional<User> checkUsername = userRepository.findByNickname(nickname);
-        if (checkUsername.isPresent()) {
+        boolean checkNickname = userRepository.existsByNickname(nickname);
+        if (checkNickname) {
             throw new IllegalArgumentException(UserExceptionMessage.DUPLICATED_NICKNAME.getMessage());
         }
     }
 
     private void validateSlackId(String slackId) {
-        Optional<User> checkUsername = userRepository.findBySlackId(slackId);
-        if (checkUsername.isPresent()) {
+        boolean checkSlackId = userRepository.existsBySlackId(slackId);
+        if (checkSlackId) {
             throw new IllegalArgumentException(UserExceptionMessage.DUPLICATED_SLACKID.getMessage());
         }
     }

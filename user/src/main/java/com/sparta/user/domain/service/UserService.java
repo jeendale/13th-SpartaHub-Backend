@@ -10,6 +10,8 @@ import com.sparta.user.model.entity.UserRoleEnum;
 import com.sparta.user.model.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,12 @@ public class UserService {
         validateDeletedUser(user);
 
         return UserResponseDto.from(user);
+    }
+
+    public Page<UserResponseDto> searchUsers(UserRoleEnum requestRole, String username, String nickname, Pageable pageable) {
+        validateRequestRoleIsMaster(requestRole);
+
+        return userRepository.searchUsers(username, nickname, pageable);
     }
 
     @Transactional

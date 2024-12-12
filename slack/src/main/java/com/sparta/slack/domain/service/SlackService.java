@@ -11,6 +11,8 @@ import com.sparta.slack.model.repository.SlackRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,12 @@ public class SlackService {
                 .message(slackHistory.getMessage())
                 .sentAt(slackHistory.getSentAt())
                 .build();
+    }
+
+    public Page<SlackHistoryResponseDto> getSlackHistories(String recievedSlackId, Pageable pageable, String requestRole) {
+        validateRequestRole(requestRole);
+
+        return slackRepository.searchSlackHistories(recievedSlackId, pageable);
     }
 
     @Transactional

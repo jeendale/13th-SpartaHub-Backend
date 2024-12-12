@@ -3,15 +3,16 @@ package com.sparta.shipment.model.repository;
 
 import static com.sparta.shipment.model.entity.QShipmentManager.shipmentManager;
 
-import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
+import com.sparta.shipment.model.entity.QShipmentManager;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,23 +30,37 @@ public class ShipmentManagerRepositoryImpl implements ShipmentManagerRepositoryC
                                                                       Pageable pageable) {
         List<OrderSpecifier<?>> orders = getAllOrderSpecifiers(pageable);
 
-        QueryResults<ShipmentManager> results = queryFactory
-                .selectFrom(shipmentManager)
+        // 1️⃣ count 쿼리 (transform으로 count 쿼리 최적화)
+        long total = Optional.ofNullable(queryFactory
+                .select(shipmentManager.shipmentManagerId.count())
+                .from(QShipmentManager.shipmentManager)
                 .where(
-                        usernameContains(searchDto.getUsername()),
-                        managerTypeIsValid(searchDto.getManagerType()),
+                        usernameContains(searchDto.username()),
+                        managerTypeIsValid(searchDto.managerType()),
+                        isNotDeleted()
+                )
+                .fetchOne()).orElse(0L);
+        // ✅ 카운트 쿼리는 단일 결과만 가져옵니다.
+
+        // 2️⃣ 페이징 데이터 조회 (offset/limit 추가)
+        List<ShipmentManager> results = queryFactory
+                .selectFrom(QShipmentManager.shipmentManager)
+                .where(
+                        usernameContains(searchDto.username()),
+                        managerTypeIsValid(searchDto.managerType()),
                         isNotDeleted()
                 )
                 .orderBy(orders.toArray(new OrderSpecifier[0]))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .fetchResults();
+                .fetch();
 
-        List<GetShipmentManagerResponseDto> content = results.getResults().stream()
+        // 3️⃣ 조회한 데이터 DTO로 변환
+        List<GetShipmentManagerResponseDto> content = results.stream()
                 .map(GetShipmentManagerResponseDto::of)
                 .collect(Collectors.toList());
-        long total = results.getTotal();
 
+        // 4️⃣ Page 객체로 반환
         return new PageImpl<>(content, pageable, total);
     }
 
@@ -55,7 +70,7 @@ public class ShipmentManagerRepositoryImpl implements ShipmentManagerRepositoryC
 
     private BooleanExpression managerTypeIsValid(String managerType) {
         if (managerType != null) {
-            return shipmentManager.managerType.stringValue().toUpperCase().in(managerType);
+            return shipmentManager.managerType.stringValue().equalsIgnoreCase(managerType);
         }
         return null;
     }

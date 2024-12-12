@@ -31,10 +31,11 @@ public class ShipmentManagerService {
                                                             String requestUsername,
                                                             String requestRole) {
 
-        validateRequestRole(requestRole, "CREATE");
+        validateRole(requestRole);
 
         // TODO: user와 연결해서 username값 있는지, 해당 username 권한이 SHIPMENT_MANAGER 인지 확인
         // TODO: HUB와 연결해서 hubId 있는지 확인
+        // TODO: 인원도 10명까지만 가능한가?
 
         UUID shipmentManagerId = UUID.randomUUID();
         while (shipmentManagerRepository.existsById(shipmentManagerId)) {
@@ -47,7 +48,6 @@ public class ShipmentManagerService {
             ShipmentManager shipmentManager = ShipmentManager.create(shipmentManagerId, request.getUsername(),
                     request.getInHubId(), request.getManagerType(), shipmentSeq);
 
-            shipmentManager.updateCreatedByAndLastModifiedBy(requestUsername);
             shipmentManagerRepository.save(shipmentManager);
 
             return ShipmentManagerResponseDto.of(shipmentManager);
@@ -61,7 +61,7 @@ public class ShipmentManagerService {
     @Transactional
     public ShipmentManagerResponseDto deleteShipmentManager(UUID shipmentManagerId, String requestUsername,
                                                             String requestRole) {
-        validateRequestRole(requestRole, "DELETE");
+        validateRole(requestRole);
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
@@ -74,7 +74,7 @@ public class ShipmentManagerService {
     public ShipmentManagerResponseDto updateShipmentManager(UUID shipmentManagerId,
                                                             UpdateShipmentManagerRequestDto request,
                                                             String requestUsername, String requestRole) {
-        validateRequestRole(requestRole, "UPDATE");
+        validateRole(requestRole);
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
@@ -95,9 +95,16 @@ public class ShipmentManagerService {
     public GetShipmentManagerResponseDto getShipmentManagerById(UUID shipmentManagerId, String requestUsername,
                                                                 String requestRole) {
 
-        validateRequestRole(requestRole, "GET");
+        validateGetByIdRole(requestRole);
+
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
+        if (requestRole.equals("SHIPMENT_MANAGER")) {
+            if (!shipmentManager.getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_MY_INFO.getMessage());
+            }
+
+        }
         return GetShipmentManagerResponseDto.of(shipmentManager);
     }
 
@@ -105,13 +112,12 @@ public class ShipmentManagerService {
     public Page<GetShipmentManagerResponseDto> getShipmentManagers(ShipmentManagerSearchDto searchDto,
                                                                    Pageable pageable, String requestUsername,
                                                                    String requestRole) {
-        validateRequestRole(requestRole, "GET");
+        validateRole(requestRole);
 
         return shipmentManagerRepository.searchShipmentManagers(searchDto, pageable);
     }
 
     private int getNextSequence(String managerType) {
-
         String sequenceName = managerType.equals("HUB_SHIPMENT") ? "shipment_seq_hub" : "shipment_seq_comp";
         // PostgreSQL에서 시퀀스를 가져오는 SQL
         String sql = "SELECT NEXTVAL('" + sequenceName + "')";
@@ -127,28 +133,26 @@ public class ShipmentManagerService {
     }
 
     // 요청 헤더의 role이 MASTER인지 검증하는 메서드
-    private void validateRequestRole(String requestRole, String actionType) {
+    private void validateRole(String requestRole) {
 
-        //TODO: 허브 담당자 권한일 시 내 담당 허브인지 확인, 배송담당자 일땐 본인 정보만 확인 가능
-        if (actionType.equals("CREATE") || actionType.equals("UPDATE") || actionType.equals("DELETE")) {
-            if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
-                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
-            }
-        } else if (actionType.equals("GET")) {
-            // 'READ' 작업은 'MASTER', 'HUB_MANAGER', 'SHIPMENT_MANAGER' 모두 허용
-            if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER") && !requestRole.equals(
-                    "SHIPMENT_MANAGER")) {
-                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
-            }
-        } else {
-            throw new IllegalArgumentException("Unknown action type: " + actionType);
+        if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
+            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+
+    }
+
+    private void validateGetByIdRole(String requestRole) {
+
+        if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER") && !requestRole.equals(
+                "SHIPMENT_MANAGER")) {
+            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
 
     }
 
     private ShipmentManager findActiveByShipmentManagerId(UUID shipmentManagerId) {
 
-        return shipmentManagerRepository.findActiveByShipmentManagerId(
+        return shipmentManagerRepository.findByShipmentManagerIdAndDeletedFalse(
                         shipmentManagerId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         ShipmentManagerExceptionMessage.NOT_FOUND_DELETE.getMessage()));

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Getter
@@ -47,6 +48,17 @@ public class Hub extends Audit{
         this.isCenterHub = isCenterHub;
     }
 
+    public void updateHubname(String hubname) {
+        this.hubname = hubname;
+    }
 
+    public void updateAdress(String adress, double lati, double longti) {
+        this.address = adress;
+        this.lati = lati;
+        this.longti = longti;
+    }
 
+    public void updateIsCenterHub(boolean b) {
+        this.isCenterHub = b;
+    }
 }

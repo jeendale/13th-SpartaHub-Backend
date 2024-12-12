@@ -7,6 +7,7 @@ import com.sparta.Hub.domain.dto.response.DelteHubRes;
 import com.sparta.Hub.domain.dto.response.GetHubInfoRes;
 import com.sparta.Hub.domain.dto.response.UpdateHubRes;
 import com.sparta.Hub.domain.service.HubService;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -38,13 +39,16 @@ public class HubController {
     public ResponseEntity<GetHubInfoRes> getHub (@PathVariable UUID hubId){
         return ResponseEntity.status(HttpStatus.OK).body(hubService.getHub(hubId));
     }
-
+    @GetMapping
+    public ResponseEntity<List<GetHubInfoRes>> getAllHubs(){
+        return ResponseEntity.status(HttpStatus.OK).body(hubService.getAllHubs());
+    }
     @PatchMapping("/{hubId}")
     public ResponseEntity<UpdateHubRes> updateHub(@PathVariable UUID hubId, @RequestBody UpdateHubReq updateHubReq){
         return ResponseEntity.status(HttpStatus.OK).body(hubService.updateHub(hubId,updateHubReq));
     }
     @DeleteMapping("/{hubId}")
-    public ResponseEntity<DelteHubRes> delteHub(@PathVariable UUID hubId){
-        return ResponseEntity.status(HttpStatus.OK).body(hubService.delteHub(hubId));
+    public ResponseEntity<DelteHubRes> deleteHub(@PathVariable UUID hubId){
+        return ResponseEntity.status(HttpStatus.OK).body(hubService.deleteHub(hubId));
     }
 }

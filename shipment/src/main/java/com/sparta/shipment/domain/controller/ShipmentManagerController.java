@@ -1,10 +1,10 @@
 package com.sparta.shipment.domain.controller;
 
-import com.sparta.shipment.domain.dto.CreateShipmentManagerRequestDto;
-import com.sparta.shipment.domain.dto.GetShipmentManagerResponseDto;
-import com.sparta.shipment.domain.dto.ShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
-import com.sparta.shipment.domain.dto.UpdateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
+import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
 import com.sparta.shipment.domain.service.ShipmentManagerService;
 import jakarta.validation.Valid;
 import java.util.UUID;

@@ -1,10 +1,10 @@
 package com.sparta.shipment.domain.service;
 
-import com.sparta.shipment.domain.dto.CreateShipmentManagerRequestDto;
-import com.sparta.shipment.domain.dto.GetShipmentManagerResponseDto;
-import com.sparta.shipment.domain.dto.ShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
-import com.sparta.shipment.domain.dto.UpdateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
+import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;

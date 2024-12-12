@@ -1,4 +1,4 @@
-package com.sparta.shipment.domain.dto;
+package com.sparta.shipment.domain.dto.request;
 
 import java.util.UUID;
 import lombok.AllArgsConstructor;

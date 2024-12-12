@@ -1,4 +1,4 @@
-package com.sparta.shipment.domain.dto;
+package com.sparta.shipment.domain.dto.response;
 
 import com.sparta.shipment.model.entity.ShipmentManager;
 import java.util.UUID;

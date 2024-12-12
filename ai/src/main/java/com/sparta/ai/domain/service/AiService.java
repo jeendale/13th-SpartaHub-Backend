@@ -12,6 +12,8 @@ import com.sparta.ai.model.repository.AiMessageRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,6 +71,12 @@ public class AiService {
                 .prompt(aiMessage.getPrompt())
                 .content(aiMessage.getContent())
                 .build();
+    }
+
+    public Page<AiMessageResponseDto> searchAiMessages(String username, String requestRole, Pageable pageable) {
+        validateRequestRole(requestRole);
+
+        return aiMessageRepository.searchAiMessages(username, pageable);
     }
 
     @Transactional

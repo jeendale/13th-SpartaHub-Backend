@@ -5,6 +5,7 @@ import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
+import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;
@@ -136,7 +137,7 @@ public class ShipmentManagerService {
     private void validateRole(String requestRole) {
 
         if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
-            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
+            throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
 
     }
@@ -145,7 +146,7 @@ public class ShipmentManagerService {
 
         if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER") && !requestRole.equals(
                 "SHIPMENT_MANAGER")) {
-            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
+            throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
 
     }

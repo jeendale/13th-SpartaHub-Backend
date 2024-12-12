@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
         String fieldName = error.getField();
 
         RestApiException restApiException = RestApiException.builder()
-                .errorMessage(fieldName + ShipmentManagerExceptionMessage.NOT_ALLOWED_NULL.getMessage())
+                .errorMessage(fieldName + ShipmentCommonExceptionMessage.NOT_ALLOWED_NULL.getMessage())
                 .build();
 
         return new ResponseEntity<>(

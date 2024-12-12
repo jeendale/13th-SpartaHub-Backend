@@ -29,6 +29,9 @@ public class Shipment extends Audit {
     @Column(name = "order_id", nullable = false)
     private UUID orderId;
 
+    @Column(name = "shipment_manager_id", nullable = false)
+    private UUID shipmentManagerId;
+
     @Column(name = "start_hub_id", nullable = false)
     private UUID startHubId;
 
@@ -51,8 +54,8 @@ public class Shipment extends Audit {
     /**
      * 받는 사람 이름 이름은 UUID로 관리되지 않으므로 VARCHAR(255)로 지정합니다.
      */
-    @Column(name = "receiver _name", nullable = false)
-    private String receiverName;
+    @Column(name = "receivername", nullable = false)
+    private String receivername;
 
     /**
      * 받는 사람 슬랙 아이디 Slack 알림 전송을 위해 사용합니다.
@@ -60,5 +63,19 @@ public class Shipment extends Audit {
     @Column(name = "receiver_slack_id", nullable = false)
     private String receiverSlackId;
 
-
+    public static Shipment create(UUID shipmentId, UUID orderId, UUID shipmentManagerId, UUID startHubId, UUID endHubId,
+                                  String shipmentStatus, String shippingAddress,
+                                  String receivername, String receiverSlackId) {
+        return Shipment.builder()
+                .shipmentId(shipmentId)
+                .orderId(orderId)
+                .shipmentManagerId(shipmentManagerId)
+                .startHubId(startHubId)
+                .endHubId(endHubId)
+                .shipmentStatus(ShipmentStatusEnum.fromString(shipmentStatus))
+                .shippingAddress(shippingAddress)
+                .receivername(receivername)
+                .receiverSlackId(receiverSlackId)
+                .build();
+    }
 }

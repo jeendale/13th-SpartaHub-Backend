@@ -6,8 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ShipmentManagerExceptionMessage {
-    NOT_ALLOWED_ROLE("배송 담당자 권한이 아닙니다."),
-    NOT_FOUND_DELETE("해당하는 ShipmentManagerId에 삭제 가능한 값이 없습니다."),
+    NOT_FOUND_DELETE("해당하는 ShipmentManagerId로 삭제 가능한 값이 없습니다."),
     NOT_MY_INFO("해당 ShipmentManagerId는 본인의 Id가 아닙니다.");
 
     private final String message;

@@ -1,7 +1,7 @@
 package com.sparta.shipment.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
+import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 
 public enum ManagerTypeEnum {
 
@@ -15,6 +15,6 @@ public enum ManagerTypeEnum {
                 return managerType;
             }
         }
-        throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_ROLE.getMessage());
+        throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_ROLE.getMessage());
     }
 }

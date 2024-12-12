@@ -38,6 +38,7 @@ public abstract class Audit {
 
     public void updateCreatedByAndLastModifiedBy(String username) {
         createdBy = username;
+        lastModifiedAt= LocalDateTime.now();
         lastModifiedBy = username;
     }
 

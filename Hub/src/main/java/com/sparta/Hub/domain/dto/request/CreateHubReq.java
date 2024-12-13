@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class CreateHubRes {
+public class CreateHubReq {
     private String hubname;
     private String adress;
     private double lati;

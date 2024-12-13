@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -18,7 +19,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "p_shipment_route")
+@Table(name = "p_shipment_route",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"shipment_id", "route_seq"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(access = AccessLevel.PRIVATE)
@@ -99,7 +101,7 @@ public class ShipmentRoute extends Audit {
                                        int routeSeq,
                                        UUID startHubId, UUID endHubId, BigDecimal expectedDistance,
                                        BigDecimal expectedTime, BigDecimal realDistance,
-                                       BigDecimal realTime, ShipmentStatusEnum shipmentStatus) {
+                                       BigDecimal realTime, String shipmentStatus) {
         return ShipmentRoute.builder()
                 .shipmentRouteId(shipmentRouteId)
                 .shipment(shipment)
@@ -111,7 +113,7 @@ public class ShipmentRoute extends Audit {
                 .expectedTime(expectedTime)
                 .realDistance(realDistance)
                 .realTime(realTime)
-                .shipmentStatus(shipmentStatus)
+                .shipmentStatus(ShipmentStatusEnum.fromString(shipmentStatus))
                 .build();
     }
 }

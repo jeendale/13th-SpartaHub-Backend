@@ -1,6 +1,5 @@
 package com.sparta.shipment.domain.dto.request;
 
-import com.sparta.shipment.model.entity.ShipmentStatusEnum;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -20,7 +19,7 @@ public class CreateShipmentRouteRequestDto {
     private UUID shipmentManagerId;
 
     @NotNull
-    private int routeSeq;
+    private Integer routeSeq;
 
     @NotNull
     private UUID startHubId;
@@ -39,6 +38,6 @@ public class CreateShipmentRouteRequestDto {
     private BigDecimal realTime;
 
     @NotNull
-    private ShipmentStatusEnum shipmentStatus;
+    private String shipmentStatus;
 
 }

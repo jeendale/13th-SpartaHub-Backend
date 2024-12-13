@@ -1,6 +1,7 @@
 package com.sparta.shipment.domain.service;
 
 import com.sparta.shipment.domain.dto.request.CreateShipmentRouteRequestDto;
+import com.sparta.shipment.domain.dto.request.UpdateShipmentRouteRequestDto;
 import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentExceptionMessage;
@@ -57,6 +58,35 @@ public class ShipmentRouteService {
 
         return ShipmentRouteResponseDto.of(shipmentRoute);
 
+    }
+
+    @Transactional
+    public ShipmentRouteResponseDto updateShipmentRoute(UUID shipmentRouteId,
+                                                        UpdateShipmentRouteRequestDto request,
+                                                        String requestUsername, String requestRole) {
+        validateRURole(requestRole);
+
+        ShipmentRoute shipmentRoute = findActiveByShipmentRouteId(shipmentRouteId);
+
+        ShipmentRoute updatedShipmentRoute = ShipmentRoute.create(
+                shipmentRoute.getShipmentRouteId(),
+                shipmentRoute.getShipment(),
+                shipmentRoute.getShipmentManager(),
+                shipmentRoute.getRouteSeq(),
+                shipmentRoute.getStartHubId(),
+                shipmentRoute.getEndHubId(),
+                shipmentRoute.getExpectedDistance(),
+                shipmentRoute.getExpectedTime(),
+                request.getRealDistance() != null ? request.getRealDistance() : shipmentRoute.getRealDistance(),
+                request.getRealTime() != null ? request.getRealTime() : shipmentRoute.getRealTime(),
+                request.getShipmentStatus() != null ? request.getShipmentStatus()
+                        : shipmentRoute.getShipmentStatus().toString()
+
+        );
+
+        shipmentRouteRepository.save(updatedShipmentRoute);
+
+        return ShipmentRouteResponseDto.of(updatedShipmentRoute);
     }
 
     @Transactional

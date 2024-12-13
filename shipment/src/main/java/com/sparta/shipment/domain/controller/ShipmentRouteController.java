@@ -1,6 +1,7 @@
 package com.sparta.shipment.domain.controller;
 
 import com.sparta.shipment.domain.dto.request.CreateShipmentRouteRequestDto;
+import com.sparta.shipment.domain.dto.request.UpdateShipmentRouteRequestDto;
 import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
 import com.sparta.shipment.domain.service.ShipmentRouteService;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -46,8 +48,7 @@ public class ShipmentRouteController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
-    /*
-    //배송 수정 API
+    //배송 경로 수정 API
     @PatchMapping("/{shipmentRouteId}")
     public ResponseEntity<ShipmentRouteResponseDto> updateShipmentRoute(@PathVariable UUID shipmentRouteId,
                                                                         @RequestBody UpdateShipmentRouteRequestDto request,
@@ -58,7 +59,7 @@ public class ShipmentRouteController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
-
+    /*
     //배송 단건 조회 API
     @GetMapping("/{shipmentRouteId}")
     public ResponseEntity<GetShipmentRouteResponseDto> getShipmentRouteById(@PathVariable UUID shipmentRouteId,

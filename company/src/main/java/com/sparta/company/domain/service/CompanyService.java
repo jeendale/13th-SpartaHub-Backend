@@ -63,6 +63,8 @@ public class CompanyService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
 
+        validateDeletedCompany(company);
+
         return CompanyResponseDto.builder()
                 .companyId(company.getCompanyId())
                 .hubId(company.getHubId())
@@ -88,6 +90,8 @@ public class CompanyService {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
+
+        validateDeletedCompany(company);
 
         if (requestRole.equals("COMPANY_MANAGER")) {
             validateOwnCompany(company.getUsername(), requestUsername);
@@ -119,6 +123,8 @@ public class CompanyService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
 
+        validateDeletedCompany(company);
+
         GetHubInfoRes getHubInfoRes = getHubInfoResponse(company.getHubId());
         // 아래 HUB_MANAGER 가 삭제 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
 
@@ -128,7 +134,6 @@ public class CompanyService {
                 .companyId(company.getCompanyId())
                 .build();
     }
-
 
     private GetHubInfoRes getHubInfoResponse(UUID hubId) {
         return hubClientService.getHub(hubId).getBody();
@@ -148,6 +153,12 @@ public class CompanyService {
     private void validateOwnCompany(String companyManagerName, String requestUsername) {
         if (!companyManagerName.equals(requestUsername)) {
             throw new IllegalArgumentException(CompanyExceptionMessage.NOT_OWN_COMPANY.getMessage());
+        }
+    }
+
+    private void validateDeletedCompany(Company company) {
+        if (company.isDeleted()) {
+            throw new IllegalArgumentException(CompanyExceptionMessage.DELETED_COMPANY.getMessage());
         }
     }
 

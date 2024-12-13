@@ -89,7 +89,8 @@ public class CompanyService {
         validateUserRoleIsCompanyManager(userResponseDto.getRole());
 
         GetHubInfoRes getHubInfoRes = getHubInfoResponse(requestDto.getHubId());
-        // 아래 HUB_MANAGER 가 생성 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
+        // 아래 HUB_MANAGER 가 수정 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
+        // Company의 hubId를 체크해야 하고, requestDto의 hubId를 체크해야 함
 
         company.updateCompany(
                 requestDto.getHubId(),
@@ -103,6 +104,23 @@ public class CompanyService {
                 .companyId(company.getCompanyId())
                 .build();
     }
+
+    @Transactional
+    public CompanyIdResponseDto deleteCompany(UUID companyId, String requestUsername, String requestRole) {
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
+
+        GetHubInfoRes getHubInfoRes = getHubInfoResponse(company.getHubId());
+        // 아래 HUB_MANAGER 가 삭제 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
+
+        company.updateDeleted(requestUsername);
+
+        return CompanyIdResponseDto.builder()
+                .companyId(company.getCompanyId())
+                .build();
+    }
+
 
     private GetHubInfoRes getHubInfoResponse(UUID hubId) {
         return hubClientService.getHub(hubId).getBody();
@@ -124,6 +142,7 @@ public class CompanyService {
             throw new IllegalArgumentException(CompanyExceptionMessage.NOT_OWN_COMPANY.getMessage());
         }
     }
+
 
     public CompanyIdResponseDto fallback(Throwable throwable) {
         if (throwable instanceof BadRequest) {

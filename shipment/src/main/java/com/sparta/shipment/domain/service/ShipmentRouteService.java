@@ -59,6 +59,17 @@ public class ShipmentRouteService {
 
     }
 
+    @Transactional
+    public ShipmentRouteResponseDto deleteShipmentRoute(UUID shipmentRouteId, String requestUsername,
+                                                        String requestRole) {
+        validateDeleteRole(requestRole);
+
+        ShipmentRoute shipmentRoute = findActiveByShipmentRouteId(shipmentRouteId);
+
+        shipmentRoute.updateDeleted(requestUsername);
+
+        return ShipmentRouteResponseDto.of(shipmentRoute);
+    }
 
     // create 요청이 가능한 권한인지 검증하는 메서드
     private void validateCreateRole(String requestRole) {

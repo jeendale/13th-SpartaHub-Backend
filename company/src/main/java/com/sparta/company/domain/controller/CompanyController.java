@@ -2,10 +2,14 @@ package com.sparta.company.domain.controller;
 
 import com.sparta.company.domain.dto.request.CompanyRequestDto;
 import com.sparta.company.domain.dto.response.CompanyIdResponseDto;
+import com.sparta.company.domain.dto.response.CompanyResponseDto;
 import com.sparta.company.domain.service.CompanyService;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,5 +32,13 @@ public class CompanyController {
         CompanyIdResponseDto responseDto = companyService.createCompany(requestDto, requestUsername, requestRole);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+    }
+
+    @GetMapping("/{companyId}")
+    public ResponseEntity<CompanyResponseDto> getCompany(@PathVariable UUID companyId) {
+
+        CompanyResponseDto responseDto= companyService.getCompany(companyId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
     }
 }

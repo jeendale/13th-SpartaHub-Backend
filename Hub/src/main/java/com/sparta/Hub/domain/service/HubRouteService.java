@@ -20,6 +20,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -54,6 +56,8 @@ public class HubRouteService {
     HubRoute hubRoute = HubRoute.builder()
         .startHub(startHub)
         .endHub(endHub)
+        .startHubName(startHub.getHubname())
+        .endHubName(endHub.getHubname())
         .deliveryTime(kakaoApiRes.getDeliveryTime())
         .distance(kakaoApiRes.getDistance())
         .build();
@@ -62,6 +66,8 @@ public class HubRouteService {
 
     return CreateHubRouteRes.builder()
         .hubRouteId(hubRoute.getHubId())
+        .startHubName(hubRoute.getStartHubName())
+        .endHubName(hubRoute.getEndHubName())
         .deliveryTime(hubRoute.getDeliveryTime())
         .distance(hubRoute.getDistance())
         .build();
@@ -72,21 +78,31 @@ public class HubRouteService {
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
     return GetHubRouteInfoRes.builder()
         .hubRouteId(hubRoute.getHubId())
+        .startHubName(hubRoute.getStartHubName())
+        .endHubName(hubRoute.getEndHubName())
         .distance(hubRoute.getDistance())
         .deliveryTime(hubRoute.getDeliveryTime())
         .build();
 
   }
 
+  @Cacheable(cacheNames = "hubrouteAllcache",key="getMethodName()")
+  public Page<GetHubRouteInfoRes> getAllHubRoutes(String keyword, Pageable pageable) {
+    return hubRouteRepository.searchHubRoutes(keyword, pageable);
+  }
+
+
   private void validateRole(String requestRole) {
     if(!requestRole.equals("MASTER")){
       throw new IllegalArgumentException(HubExceptionMessage.NOT_ALLOWED_API.getMessage());
     }
   }
+
   private HubRoute validateExistHubRoute(UUID hubRouteId) {
     return hubRouteRepository.findById(hubRouteId).orElseThrow(()->
         new IllegalArgumentException(HubRouteExceptionMessage.HUB_ROUTE_NOT_EXIST.getMessage()));
   }
+
 
   private void validateEquealHub(CreateHubRouteReq createHubRouteReq) {
     if(createHubRouteReq.getStratHubId().equals(createHubRouteReq.getEndHubId())){
@@ -94,10 +110,14 @@ public class HubRouteService {
     }
   }
 
+
   private Hub validateHub(UUID hubId) {
     return hubRepository.findById(hubId).orElseThrow(() -> new IllegalArgumentException(
         HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
   }
+
+
+
   private KakaoApiRes KakaoMapApi(Hub startHub, Hub endHub) {
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -136,6 +156,7 @@ public class HubRouteService {
         .distance(kilometerBD)
         .build();
   }
+
 
 
 }

@@ -31,6 +31,10 @@ public class HubRoute extends Audit {
   private LocalDateTime deliveryTime;
   @Column(nullable = false)
   private BigDecimal distance;
+  @Column(nullable = false)
+  private String startHubName;
+  @Column(nullable = false)
+  private String endHubName;
 
   @ManyToOne
   @JoinColumn(name = "start_hub_id", nullable = false)

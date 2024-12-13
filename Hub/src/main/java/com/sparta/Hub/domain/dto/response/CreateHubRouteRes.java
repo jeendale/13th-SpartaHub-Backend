@@ -12,11 +12,15 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CreateHubRouteRes {
   private UUID hubRouteId;
+  private String startHubName;
+  private String endHubName;
   private LocalDateTime deliveryTime;
   private BigDecimal distance;
 
-  public CreateHubRouteRes(UUID hubRouteId, LocalDateTime deliveryTime, BigDecimal distance) {
+  public CreateHubRouteRes(UUID hubRouteId,String startHubName,String endHubName, LocalDateTime deliveryTime, BigDecimal distance) {
     this.hubRouteId = hubRouteId;
+    this.startHubName = startHubName;
+    this.endHubName = endHubName;
     this.deliveryTime = deliveryTime;
     this.distance = distance;
   }

@@ -4,7 +4,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -29,8 +33,9 @@ public class Shipment extends Audit {
     @Column(name = "order_id", nullable = false)
     private UUID orderId;
 
-    @Column(name = "shipment_manager_id", nullable = false)
-    private UUID shipmentManagerId;
+    @ManyToOne(fetch = FetchType.LAZY) // Lazy loading to improve performance
+    @JoinColumn(name = "shipment_manager_id", referencedColumnName = "shipment_manager_id", nullable = false, foreignKey = @ForeignKey(name = "fk_shipment_shipment_manager"))
+    private ShipmentManager shipmentManager;
 
     @Column(name = "start_hub_id", nullable = false)
     private UUID startHubId;
@@ -63,13 +68,14 @@ public class Shipment extends Audit {
     @Column(name = "receiver_slack_id", nullable = false)
     private String receiverSlackId;
 
-    public static Shipment create(UUID shipmentId, UUID orderId, UUID shipmentManagerId, UUID startHubId, UUID endHubId,
+    public static Shipment create(UUID shipmentId, UUID orderId, ShipmentManager shipmentManager, UUID startHubId,
+                                  UUID endHubId,
                                   String shipmentStatus, String shippingAddress,
                                   String receivername, String receiverSlackId) {
         return Shipment.builder()
                 .shipmentId(shipmentId)
                 .orderId(orderId)
-                .shipmentManagerId(shipmentManagerId)
+                .shipmentManager(shipmentManager)
                 .startHubId(startHubId)
                 .endHubId(endHubId)
                 .shipmentStatus(ShipmentStatusEnum.fromString(shipmentStatus))

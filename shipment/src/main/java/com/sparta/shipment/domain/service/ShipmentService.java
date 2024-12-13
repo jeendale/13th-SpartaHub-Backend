@@ -6,6 +6,8 @@ import com.sparta.shipment.domain.dto.response.ShipmentResponseDto;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.model.entity.Shipment;
+import com.sparta.shipment.model.entity.ShipmentManager;
+import com.sparta.shipment.model.repository.ShipmentManagerRepository;
 import com.sparta.shipment.model.repository.ShipmentRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
+    private final ShipmentManagerRepository shipmentManagerRepository;
 
     @Transactional
     public ShipmentResponseDto createShipment(CreateShipmentRequestDto request, String requestUsername,
@@ -29,15 +32,16 @@ public class ShipmentService {
             shipmentId = UUID.randomUUID();
         }
 
+        ShipmentManager shipmentManager = findActiveByShipmentManagerId(request.getShipmentManagerId());
+
         Shipment shipment = Shipment.create(shipmentId, request.getOrderId(),
-                request.getShipmentManagerId(),
+                shipmentManager,
                 request.getStartHubId(),
                 request.getEndHubId(),
                 request.getShipmentStatus(),
                 request.getShippingAddress(),
                 request.getReceivername(),
                 request.getReceiverSlackId());
-
         shipmentRepository.save(shipment);
 
         return ShipmentResponseDto.of(shipment);
@@ -55,7 +59,7 @@ public class ShipmentService {
         Shipment updatedShipment = Shipment.create(
                 shipment.getShipmentId(),
                 shipment.getOrderId(),
-                shipment.getShipmentManagerId(),
+                shipment.getShipmentManager(),
                 shipment.getStartHubId(),
                 shipment.getEndHubId(),
                 request.getShipmentStatus() != null ? request.getShipmentStatus()
@@ -118,5 +122,19 @@ public class ShipmentService {
                         shipmentId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
+    }
+
+    private ShipmentManager findActiveByShipmentManagerId(UUID shipmentManagerId) {
+
+        ShipmentManager shipmentManager = shipmentManagerRepository.findById(shipmentManagerId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
+
+        if (shipmentManager.isDeleted()) {
+            throw new IllegalArgumentException(
+                    ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage());
+        }
+
+        return shipmentManager;
     }
 }

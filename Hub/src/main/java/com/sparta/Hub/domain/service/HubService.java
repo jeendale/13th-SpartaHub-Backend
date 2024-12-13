@@ -34,7 +34,7 @@ public class HubService {
 
         Hub hub=Hub.builder()
                 .hubname(createHubReq.getHubname())
-                .address(createHubReq.getAdress())
+                .address(createHubReq.getAddress())
                 .lati(createHubReq.getLati())
                 .longti(createHubReq.getLongti())
                 .isCenterHub(createHubReq.isCenterHub())

@@ -31,7 +31,7 @@ public class CacheConfig {
     RedisCacheConfiguration forDateTimeConfiguration =RedisCacheConfiguration
         .defaultCacheConfig()
         .disableCachingNullValues()
-        .entryTtl(Duration.ofSeconds(100))
+        .entryTtl(Duration.ofSeconds(10))
         .computePrefixWith(CacheKeyPrefix.simple())
         .serializeValuesWith(
             SerializationPair.fromSerializer(RedisSerializer.java())
@@ -42,7 +42,7 @@ public class CacheConfig {
         .builder(redisConnectionFactory)
         .cacheDefaults(configuration)
         .withCacheConfiguration("hubroutecache",forDateTimeConfiguration)
-        .withCacheConfiguration("hubrouteallcache",forDateTimeConfiguration)
+        .withCacheConfiguration("hubrouteAllcache",forDateTimeConfiguration)
         .build();
 
   }

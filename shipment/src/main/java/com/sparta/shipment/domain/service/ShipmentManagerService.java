@@ -1,0 +1,160 @@
+package com.sparta.shipment.domain.service;
+
+import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
+import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
+import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
+import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
+import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
+import com.sparta.shipment.model.entity.ShipmentManager;
+import com.sparta.shipment.model.repository.ShipmentManagerRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ShipmentManagerService {
+
+    @PersistenceContext
+    private final EntityManager entityManager;
+
+    private final ShipmentManagerRepository shipmentManagerRepository;
+
+    @Transactional
+    public ShipmentManagerResponseDto createShipmentManager(CreateShipmentManagerRequestDto request,
+                                                            String requestUsername,
+                                                            String requestRole) {
+
+        validateRole(requestRole);
+
+        // TODO: user와 연결해서 username값 있는지, 해당 username 권한이 SHIPMENT_MANAGER 인지 확인
+        // TODO: HUB와 연결해서 hubId 있는지 확인
+        // TODO: 인원도 10명까지만 가능한가?
+
+        UUID shipmentManagerId = UUID.randomUUID();
+        while (shipmentManagerRepository.existsById(shipmentManagerId)) {
+            shipmentManagerId = UUID.randomUUID();
+        }
+
+        int shipmentSeq = getNextSequence(request.getManagerType());
+
+        try {
+            ShipmentManager shipmentManager = ShipmentManager.create(shipmentManagerId, request.getUsername(),
+                    request.getInHubId(), request.getManagerType(), shipmentSeq);
+
+            shipmentManagerRepository.save(shipmentManager);
+
+            return ShipmentManagerResponseDto.of(shipmentManager);
+        } catch (Exception e) {
+            rollbackSequence(request.getManagerType(), shipmentSeq);
+            throw e;  // 예외를 다시 던져 트랜잭션 롤백
+        }
+
+    }
+
+    @Transactional
+    public ShipmentManagerResponseDto deleteShipmentManager(UUID shipmentManagerId, String requestUsername,
+                                                            String requestRole) {
+        validateRole(requestRole);
+
+        ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
+
+        shipmentManager.updateDeleted(requestUsername);
+
+        return ShipmentManagerResponseDto.of(shipmentManager);
+    }
+
+    @Transactional
+    public ShipmentManagerResponseDto updateShipmentManager(UUID shipmentManagerId,
+                                                            UpdateShipmentManagerRequestDto request,
+                                                            String requestUsername, String requestRole) {
+        validateRole(requestRole);
+
+        ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
+
+        ShipmentManager updatedShipmentManager = ShipmentManager.create(shipmentManagerId,
+                shipmentManager.getUsername(),
+                request.getInHubId() != null ? request.getInHubId() : shipmentManager.getInHubId(),
+                request.getManagerType() != null ? request.getManagerType()
+                        : shipmentManager.getManagerType().toString(),
+                shipmentManager.getShipmentSeq());
+
+        shipmentManagerRepository.save(updatedShipmentManager);
+
+        return ShipmentManagerResponseDto.of(updatedShipmentManager);
+
+    }
+
+    @Transactional
+    public GetShipmentManagerResponseDto getShipmentManagerById(UUID shipmentManagerId, String requestUsername,
+                                                                String requestRole) {
+
+        validateGetByIdRole(requestRole);
+
+        ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
+
+        if (requestRole.equals("SHIPMENT_MANAGER")) {
+            if (!shipmentManager.getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_MY_INFO.getMessage());
+            }
+
+        }
+        return GetShipmentManagerResponseDto.of(shipmentManager);
+    }
+
+    @Transactional
+    public Page<GetShipmentManagerResponseDto> getShipmentManagers(ShipmentManagerSearchDto searchDto,
+                                                                   Pageable pageable, String requestUsername,
+                                                                   String requestRole) {
+        validateRole(requestRole);
+
+        return shipmentManagerRepository.searchShipmentManagers(searchDto, pageable);
+    }
+
+    private int getNextSequence(String managerType) {
+        String sequenceName = managerType.equals("HUB_SHIPMENT") ? "shipment_seq_hub" : "shipment_seq_comp";
+        // PostgreSQL에서 시퀀스를 가져오는 SQL
+        String sql = "SELECT NEXTVAL('" + sequenceName + "')";
+        return ((Number) entityManager.createNativeQuery(sql)
+                .getSingleResult()).intValue();
+    }
+
+    // 시퀀스 롤백
+    private void rollbackSequence(String managerType, int shipmentSeq) {
+        String sequenceName = managerType.equals("HUB_SHIPMENT") ? "shipment_seq_hub" : "shipment_seq_comp";
+        String sql = "SELECT setval('" + sequenceName + "', " + shipmentSeq + ")";
+        entityManager.createNativeQuery(sql).executeUpdate();
+    }
+
+    // 요청 헤더의 role이 MASTER인지 검증하는 메서드
+    private void validateRole(String requestRole) {
+
+        if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
+            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+
+    }
+
+    private void validateGetByIdRole(String requestRole) {
+
+        if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER") && !requestRole.equals(
+                "SHIPMENT_MANAGER")) {
+            throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+
+    }
+
+    private ShipmentManager findActiveByShipmentManagerId(UUID shipmentManagerId) {
+
+        return shipmentManagerRepository.findByShipmentManagerIdAndDeletedFalse(
+                        shipmentManagerId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        ShipmentManagerExceptionMessage.NOT_FOUND_DELETE.getMessage()));
+    }
+}

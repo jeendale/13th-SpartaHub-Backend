@@ -15,6 +15,6 @@ public enum ManagerTypeEnum {
                 return managerType;
             }
         }
-        throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_ROLE.getMessage());
+        throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_TYPE.getMessage());
     }
 }

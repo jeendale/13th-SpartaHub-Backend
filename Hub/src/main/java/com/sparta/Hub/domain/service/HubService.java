@@ -1,8 +1,8 @@
 package com.sparta.Hub.domain.service;
 
-import com.sparta.Hub.domain.dto.request.CreateHubRes;
+import com.sparta.Hub.domain.dto.request.CreateHubReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubReq;
-import com.sparta.Hub.domain.dto.response.CreateHubReq;
+import com.sparta.Hub.domain.dto.response.CreateHubRes;
 import com.sparta.Hub.domain.dto.response.DelteHubRes;
 import com.sparta.Hub.domain.dto.response.GetHubInfoRes;
 import com.sparta.Hub.domain.dto.response.UpdateHubRes;
@@ -18,6 +18,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,23 +28,28 @@ public class HubService {
 
     private final HubRepository hubRepository;
 
-    public CreateHubReq createHub(CreateHubRes createHubRes) {
+    public CreateHubRes createHub(CreateHubReq createHubReq,String requestName,String requestRole) {
         //권한 확인
+        validateRole(requestRole);
+
         Hub hub=Hub.builder()
-                .hubname(createHubRes.getHubname())
-                .address(createHubRes.getAdress())
-                .lati(createHubRes.getLati())
-                .longti(createHubRes.getLongti())
-                .isCenterHub(createHubRes.isCenterHub())
+                .hubname(createHubReq.getHubname())
+                .address(createHubReq.getAdress())
+                .lati(createHubReq.getLati())
+                .longti(createHubReq.getLongti())
+                .isCenterHub(createHubReq.isCenterHub())
                 .build();
 
         hubRepository.save(hub);
 
-        return CreateHubReq.builder()
+        return CreateHubRes.builder()
                 .hubUId(hub.getHubId())
                 .build();
 
     }
+
+
+
     @Cacheable(cacheNames = "hubCache", key = "args[0]")
     public GetHubInfoRes getHub(UUID hubId) {
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
@@ -58,49 +65,58 @@ public class HubService {
     }
 
     @Cacheable(cacheNames = "hubAllCache",key="getMethodName()")
-    public List<GetHubInfoRes> getAllHubs() {
-        List<Hub> hubs=hubRepository.findAll();
-        List<GetHubInfoRes> getHubInfoResList = new ArrayList<>();
-        for (Hub hub : hubs) {
-           GetHubInfoRes getHubs = GetHubInfoRes.builder()
-                .hubName(hub.getHubname())
-                .hubId(hub.getHubId())
-                .address(hub.getAddress())
-                .lati(hub.getLati())
-                .longti(hub.getLongti())
-                .isCenterHub(hub.isCenterHub())
-                .build();
-
-                getHubInfoResList.add(getHubs);
-        }
-        return getHubInfoResList;
+    public Page<GetHubInfoRes> getAllHubs(String keyword, Pageable pageable) {
+        return hubRepository.searchHubs(keyword,pageable);
     }
 
     @Transactional
     @CachePut(cacheNames = "hubCache",key = "args[0]")
     @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
-    public UpdateHubRes updateHub(UUID hubId, UpdateHubReq updateHubReq) {
-        //dummy
-        String username="user";
+    public UpdateHubRes updateHub(UUID hubId, UpdateHubReq updateHubReq,String requestName,String requestRole) {
 
+        validateRole(requestRole);
 
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
             HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
-        hub.updateCreatedByAndLastModifiedBy(username);
+
+        hub.updateCreatedByAndLastModifiedBy(requestName);
+
+        hubRepository.save(checkUpdate(hub,updateHubReq));
+
+        return UpdateHubRes.builder()
+            .hubId(hub.getHubId())
+            .build();
+    }
+
+
+
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "hubCache",key="args[0]"),
+            @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
+    })
+    public DelteHubRes deleteHub(UUID hubId,String requestName,String requestRole) {
+        validateRole(requestRole);
+
+        Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
+            HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
+        hub.updateDeleted(requestName);
+        hubRepository.save(hub);
+
+        return  DelteHubRes.builder()
+            .hubId(hub.getHubId())
+            .build();
+    }
+
+    private void validateRole(String requestRole) {
+        if(!requestRole.equals("MASTER")){
+            throw new IllegalArgumentException(HubExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+    }
+    private Hub checkUpdate(Hub hub, UpdateHubReq updateHubReq) {
         if(updateHubReq.getHubname()!=null) {
-            if(updateHubReq.getHubname().equals(hub.getHubname())) {
-                throw new IllegalArgumentException(
-                    HubExceptionMessage.HUB_NAME_EQUEAL.getMessage()
-                );
-            }
             hub.updateHubname(updateHubReq.getHubname());
         }
         if(updateHubReq.getAdress()!=null) {
-            if(updateHubReq.getAdress().equals(hub.getAddress())) {
-                throw new IllegalArgumentException(
-                    HubExceptionMessage.HUB_ADRESS_EQUEAL.getMessage()
-                );
-            }
             hub.updateAdress(
                 updateHubReq.getAdress(),
                 updateHubReq.getLati(),
@@ -111,26 +127,6 @@ public class HubService {
                 hub.updateIsCenterHub(false);
             }
         }
-        hubRepository.save(hub);
-        return UpdateHubRes.builder()
-            .hubId(hub.getHubId())
-            .build();
-    }
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "hubCache",key="args[0]"),
-            @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
-    })
-    public DelteHubRes deleteHub(UUID hubId) {
-        //dummy
-        String username="user";
-
-        Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
-            HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
-        hub.updateDeleted(username);
-        hubRepository.save(hub);
-
-        return  DelteHubRes.builder()
-            .hubId(hub.getHubId())
-            .build();
+        return hub;
     }
 }

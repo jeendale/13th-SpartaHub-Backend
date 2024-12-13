@@ -51,4 +51,12 @@ public class HubRoute extends Audit {
     this.endHub = endHub;
   }
 
+  public void updateEndHubRoute(Hub endHub) {
+    this.endHub = endHub;
+  }
+
+  public void updateRoad(LocalDateTime deliveryTime, BigDecimal distance) {
+    this.deliveryTime = deliveryTime;
+    this.distance = distance;
+  }
 }

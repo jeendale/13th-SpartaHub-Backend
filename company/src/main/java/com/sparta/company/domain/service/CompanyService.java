@@ -1,6 +1,7 @@
 package com.sparta.company.domain.service;
 
 import com.sparta.company.domain.dto.request.CompanyRequestDto;
+import com.sparta.company.domain.dto.request.UpdateCompanyRequestDto;
 import com.sparta.company.domain.dto.response.CompanyIdResponseDto;
 import com.sparta.company.domain.dto.response.CompanyResponseDto;
 import com.sparta.company.excpetion.CompanyExceptionMessage;
@@ -15,7 +16,6 @@ import feign.FeignException.ServiceUnavailable;
 import feign.RetryableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,7 @@ public class CompanyService {
             String requestRole) {
 
         UserResponseDto userResponseDto = getUserResponseDto(requestDto.getUsername());
-        validateUserRoleIsCompanyManager(Objects.requireNonNull(userResponseDto));
+        validateUserRoleIsCompanyManager(userResponseDto.getRole());
 
         GetHubInfoRes getHubInfoRes = getHubInfoResponse(requestDto.getHubId());
         // 아래 HUB_MANAGER 가 생성 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
@@ -70,6 +70,40 @@ public class CompanyService {
                 .build();
     }
 
+    @Transactional
+    @CircuitBreaker(name = "userAndHubService", fallbackMethod = "fallback")
+    public CompanyIdResponseDto updateCompany(
+            UUID companyId,
+            UpdateCompanyRequestDto requestDto,
+            String requestUsername,
+            String requestRole) {
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
+
+        if (requestRole.equals("COMPANY_MANAGER")) {
+            validateOwnCompany(company.getUsername(), requestUsername);
+        }
+
+        UserResponseDto userResponseDto = getUserResponseDto(requestDto.getUsername());
+        validateUserRoleIsCompanyManager(userResponseDto.getRole());
+
+        GetHubInfoRes getHubInfoRes = getHubInfoResponse(requestDto.getHubId());
+        // 아래 HUB_MANAGER 가 생성 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
+
+        company.updateCompany(
+                requestDto.getHubId(),
+                requestDto.getUsername(),
+                requestDto.getCompanyName(),
+                requestDto.getCompanyAddress(),
+                requestDto.getCompanyType()
+        );
+
+        return CompanyIdResponseDto.builder()
+                .companyId(company.getCompanyId())
+                .build();
+    }
+
     private GetHubInfoRes getHubInfoResponse(UUID hubId) {
         return hubClientService.getHub(hubId).getBody();
     }
@@ -79,14 +113,20 @@ public class CompanyService {
         return userClientService.getUser(username).getBody();
     }
 
-    private void validateUserRoleIsCompanyManager(UserResponseDto userResponseDto) {
-        if (!userResponseDto.getRole().equals("COMPANY_MANAGER")) {
+    private void validateUserRoleIsCompanyManager(String role) {
+        if (!role.equals("COMPANY_MANAGER")) {
             throw new IllegalArgumentException(CompanyExceptionMessage.NOT_COMPANY_MANAGER.getMessage());
         }
     }
 
+    private void validateOwnCompany(String companyManagerName, String requestUsername) {
+        if (!companyManagerName.equals(requestUsername)) {
+            throw new IllegalArgumentException(CompanyExceptionMessage.NOT_OWN_COMPANY.getMessage());
+        }
+    }
+
     public CompanyIdResponseDto fallback(Throwable throwable) {
-        if (throwable instanceof BadRequest badRequestException) {
+        if (throwable instanceof BadRequest) {
             log.warn("User 400 Bad Request 발생: {}", throwable.getMessage());
             if (throwable.getMessage().contains(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage())) {
                 throw new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
@@ -97,12 +137,12 @@ public class CompanyService {
             }
         }
 
-        if (throwable instanceof RetryableException retryableException) {
+        if (throwable instanceof RetryableException) {
             log.warn("RetryableException 발생");
             throw new UserServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
         }
 
-        if (throwable instanceof ServiceUnavailable serviceUnavailableException) {
+        if (throwable instanceof ServiceUnavailable) {
             log.warn("ServiceUnavailableException 발생");
             throw new UserServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
         }

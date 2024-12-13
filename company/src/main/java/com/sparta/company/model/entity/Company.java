@@ -40,4 +40,12 @@ public class Company extends Audit{
     @Enumerated(value = EnumType.STRING)
     @Column(nullable = false)
     private CompanyType companyType;
+
+    public void updateCompany(UUID hubId, String username, String companyName, String companyAddress, CompanyType companyType) {
+        this.hubId = hubId;
+        this.username = username;
+        this.companyName = companyName;
+        this.companyAddress = companyAddress;
+        this.companyType = companyType;
+    }
 }

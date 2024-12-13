@@ -3,15 +3,13 @@ package com.sparta.Hub.domain.service;
 import com.sparta.Hub.domain.dto.request.CreateHubReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubReq;
 import com.sparta.Hub.domain.dto.response.CreateHubRes;
-import com.sparta.Hub.domain.dto.response.DelteHubRes;
+import com.sparta.Hub.domain.dto.response.DeleteHubRes;
 import com.sparta.Hub.domain.dto.response.GetHubInfoRes;
 import com.sparta.Hub.domain.dto.response.UpdateHubRes;
 import com.sparta.Hub.exception.HubExceptionMessage;
 import com.sparta.Hub.model.entity.Hub;
 import com.sparta.Hub.model.repository.HubRepository;
 import jakarta.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -94,7 +92,7 @@ public class HubService {
             @CacheEvict(cacheNames = "hubCache",key="args[0]"),
             @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
     })
-    public DelteHubRes deleteHub(UUID hubId,String requestName,String requestRole) {
+    public DeleteHubRes deleteHub(UUID hubId,String requestName,String requestRole) {
         validateRole(requestRole);
 
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
@@ -102,7 +100,7 @@ public class HubService {
         hub.updateDeleted(requestName);
         hubRepository.save(hub);
 
-        return  DelteHubRes.builder()
+        return  DeleteHubRes.builder()
             .hubId(hub.getHubId())
             .build();
     }

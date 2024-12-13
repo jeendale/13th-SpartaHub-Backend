@@ -53,6 +53,7 @@ public class ShipmentManagerController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
+    //배송 담당자 수정 API
     @PatchMapping("/{shipmentManagerId}")
     public ResponseEntity<ShipmentManagerResponseDto> updateShipmentManager(@PathVariable UUID shipmentManagerId,
                                                                             @RequestBody UpdateShipmentManagerRequestDto request,
@@ -63,6 +64,7 @@ public class ShipmentManagerController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
+    //배송 담당자 단건 조회 API
     @GetMapping("/{shipmentManagerId}")
     public ResponseEntity<GetShipmentManagerResponseDto> getShipmentManagerById(@PathVariable UUID shipmentManagerId,
                                                                                 @RequestHeader("X-User-Username") String requestUsername,
@@ -72,6 +74,7 @@ public class ShipmentManagerController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
+    //배송 담당자 다건 조회 API
     @GetMapping
     public ResponseEntity<PagedModel<GetShipmentManagerResponseDto>> getShipmentManagers(
             ShipmentManagerSearchDto searchDto,

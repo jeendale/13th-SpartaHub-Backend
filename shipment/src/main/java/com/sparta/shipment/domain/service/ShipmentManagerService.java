@@ -144,6 +144,6 @@ public class ShipmentManagerService {
         return shipmentManagerRepository.findByShipmentManagerIdAndDeletedFalse(
                         shipmentManagerId)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        ShipmentManagerExceptionMessage.NOT_FOUND_DELETE.getMessage()));
+                        ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
     }
 }

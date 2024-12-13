@@ -2,10 +2,14 @@ package com.sparta.Hub.domain.controller;
 
 import com.sparta.Hub.domain.dto.request.CreateHubRouteReq;
 import com.sparta.Hub.domain.dto.response.CreateHubRouteRes;
+import com.sparta.Hub.domain.dto.response.GetHubRouteInfoRes;
 import com.sparta.Hub.domain.service.HubRouteService;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -27,6 +31,11 @@ public class HubRouteController {
     return ResponseEntity
         .status(HttpStatus.CREATED)
         .body(hubRouteService.createHubRoute(createHubRouteReq,requestUsername,requestRole));
+  }
+
+  @GetMapping("/{hubRouteId}")
+  public ResponseEntity<GetHubRouteInfoRes> getHubRoute(@PathVariable UUID hubRouteId) {
+    return ResponseEntity.status(HttpStatus.OK).body(hubRouteService.getHubRoute(hubRouteId));
   }
 
 }

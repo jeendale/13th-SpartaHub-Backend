@@ -2,6 +2,7 @@ package com.sparta.Hub.domain.service;
 
 import com.sparta.Hub.domain.dto.request.CreateHubRouteReq;
 import com.sparta.Hub.domain.dto.response.CreateHubRouteRes;
+import com.sparta.Hub.domain.dto.response.GetHubRouteInfoRes;
 import com.sparta.Hub.domain.dto.response.KakaoApiRes;
 import com.sparta.Hub.exception.HubExceptionMessage;
 import com.sparta.Hub.exception.HubRouteExceptionMessage;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -41,7 +43,7 @@ public class HubRouteService {
       String requestUsername,
       String requestRole
   ) {
-    validateRole(requestRole);
+    //validateRole(requestRole);
     validateEquealHub(createHubRouteReq);
 
     Hub startHub = validateHub(createHubRouteReq.getStratHubId());
@@ -65,15 +67,28 @@ public class HubRouteService {
         .build();
   }
 
+  @Cacheable(cacheNames = "hubroutecache",key = "args[0]")
+  public GetHubRouteInfoRes getHubRoute(UUID hubRouteId) {
+    HubRoute hubRoute = validateExistHubRoute(hubRouteId);
+    return GetHubRouteInfoRes.builder()
+        .hubRouteId(hubRoute.getHubId())
+        .distance(hubRoute.getDistance())
+        .deliveryTime(hubRoute.getDeliveryTime())
+        .build();
+
+  }
   private void validateRole(String requestRole) {
     if(!requestRole.equals("MASTER")){
       throw new IllegalArgumentException(HubExceptionMessage.NOT_ALLOWED_API.getMessage());
     }
   }
-
+  private HubRoute validateExistHubRoute(UUID hubRouteId) {
+    return hubRouteRepository.findById(hubRouteId).orElseThrow(()->
+        new IllegalArgumentException(HubRouteExceptionMessage.HUB_ROUTE_NOT_EXIST.getMessage()));
+  }
 
   private void validateEquealHub(CreateHubRouteReq createHubRouteReq) {
-    if(createHubRouteReq.getStratHubId() ==createHubRouteReq.getEndHubId()){
+    if(createHubRouteReq.getStratHubId().equals(createHubRouteReq.getEndHubId())){
       throw new IllegalArgumentException(HubRouteExceptionMessage.HUB_ROUTE_EQUEAL.getMessage());
     }
   }
@@ -120,5 +135,6 @@ public class HubRouteService {
         .distance(kilometerBD)
         .build();
   }
+
 
 }

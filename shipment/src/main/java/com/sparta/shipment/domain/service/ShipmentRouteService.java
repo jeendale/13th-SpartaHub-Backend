@@ -2,6 +2,7 @@ package com.sparta.shipment.domain.service;
 
 import com.sparta.shipment.domain.dto.request.CreateShipmentRouteRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentRouteRequestDto;
+import com.sparta.shipment.domain.dto.response.GetShipmentRouteResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentExceptionMessage;
@@ -15,6 +16,8 @@ import com.sparta.shipment.model.repository.ShipmentRepository;
 import com.sparta.shipment.model.repository.ShipmentRouteRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,6 +102,33 @@ public class ShipmentRouteService {
         shipmentRoute.updateDeleted(requestUsername);
 
         return ShipmentRouteResponseDto.of(shipmentRoute);
+    }
+
+    @Transactional
+    public GetShipmentRouteResponseDto getShipmentRouteById(UUID shipmentRouteId, String requestUsername,
+                                                            String requestRole) {
+
+        validateRURole(requestRole);
+
+        ShipmentRoute shipmentRoute = findActiveByShipmentRouteId(shipmentRouteId);
+
+        if (requestRole.equals("SHIPMENT_MANAGER")) {
+            if (!shipmentRoute.getShipmentManager().getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(ShipmentRouteExceptionMessage.NOT_MY_INFO.getMessage());
+            }
+
+        }
+        return GetShipmentRouteResponseDto.of(shipmentRoute);
+    }
+
+    @Transactional
+    public Page<GetShipmentRouteResponseDto> getShipmentRoutes(String shipmentStatus,
+                                                               Pageable pageable, String requestUsername,
+                                                               String requestRole) {
+        validateRURole(requestRole);
+
+        return shipmentRouteRepository.searchShipmentRoutes(shipmentStatus, pageable);
+
     }
 
     // create 요청이 가능한 권한인지 검증하는 메서드

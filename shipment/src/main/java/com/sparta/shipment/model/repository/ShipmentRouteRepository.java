@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ShipmentRouteRepository extends JpaRepository<ShipmentRoute, UUID> {
+public interface ShipmentRouteRepository extends JpaRepository<ShipmentRoute, UUID>, ShipmentRouteRepositoryCustom {
 
     Optional<ShipmentRoute> findByShipmentRouteIdAndDeletedFalse(UUID shipmentRouteId);
 }

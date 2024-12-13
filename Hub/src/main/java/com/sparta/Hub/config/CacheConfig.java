@@ -28,10 +28,21 @@ public class CacheConfig {
         .serializeValuesWith(
             SerializationPair.fromSerializer(RedisSerializer.json())
         );
+    RedisCacheConfiguration forDateTimeConfiguration =RedisCacheConfiguration
+        .defaultCacheConfig()
+        .disableCachingNullValues()
+        .entryTtl(Duration.ofSeconds(100))
+        .computePrefixWith(CacheKeyPrefix.simple())
+        .serializeValuesWith(
+            SerializationPair.fromSerializer(RedisSerializer.java())
+        );
+
 
     return RedisCacheManager
         .builder(redisConnectionFactory)
         .cacheDefaults(configuration)
+        .withCacheConfiguration("hubroutecache",forDateTimeConfiguration)
+        .withCacheConfiguration("hubrouteallcache",forDateTimeConfiguration)
         .build();
 
   }

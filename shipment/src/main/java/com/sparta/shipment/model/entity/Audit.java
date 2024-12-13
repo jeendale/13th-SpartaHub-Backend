@@ -35,11 +35,6 @@ public abstract class Audit {
     @Column(name = "is_deleted")
     private boolean deleted;
 
-    public void updateCreatedByAndLastModifiedBy(String username) {
-        createdBy = username;
-        lastModifiedBy = username;
-    }
-
     public void updateDeleted(String username) {
         deletedBy = username;
         deletedAt = LocalDateTime.now();

@@ -43,11 +43,32 @@ public class ShipmentService {
 
     }
 
+    @Transactional
+    public ShipmentResponseDto deleteShipment(UUID shipmentId, String requestUsername,
+                                              String requestRole) {
+        validateDeleteRole(requestRole);
 
-    // 요청 헤더의 role이 MASTER인지 검증하는 메서드
+        Shipment shipment = findActiveByShipmentId(shipmentId);
+
+        shipment.updateDeleted(requestUsername);
+
+        return ShipmentResponseDto.of(shipment);
+    }
+
+
+    // create 요청이 가능한 권한인지 검증하는 메서드
     private void validateCreateRole(String requestRole) {
 
         if (!requestRole.equals("MASTER")) {
+            throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+
+    }
+
+    // delete 요청이 가능한 권한인지 검증하는 메서드
+    private void validateDeleteRole(String requestRole) {
+
+        if (!requestRole.equals("MASTER") && !requestRole.equals("HUB_MANAGER")) {
             throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
 

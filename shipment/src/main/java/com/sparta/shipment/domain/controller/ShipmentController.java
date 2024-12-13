@@ -4,9 +4,12 @@ import com.sparta.shipment.domain.dto.request.CreateShipmentRequestDto;
 import com.sparta.shipment.domain.dto.response.ShipmentResponseDto;
 import com.sparta.shipment.domain.service.ShipmentService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -29,4 +32,14 @@ public class ShipmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body((response));
     }
 
+    // 배송 삭제 API
+    @DeleteMapping("/{shipmentId}")
+    public ResponseEntity<ShipmentResponseDto> deleteShipment(
+            @PathVariable UUID shipmentId,
+            @RequestHeader("X-User-Username") String requestUsername,
+            @RequestHeader("X-User-Role") String requestRole) {
+        ShipmentResponseDto response = shipmentService.deleteShipment(shipmentId,
+                requestUsername, requestRole);
+        return ResponseEntity.status(HttpStatus.OK).body((response));
+    }
 }

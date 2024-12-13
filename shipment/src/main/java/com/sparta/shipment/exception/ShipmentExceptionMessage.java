@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ShipmentExceptionMessage {
-    NOT_FOUND_DELETE("해당하는 ShipmentId로 삭제 가능한 값이 없습니다."),
+    NOT_FOUND_DELETE("해당하는 ShipmentId로 유효한 값이 없습니다."),
     NOT_MY_INFO("해당 ShipmentId는 본인의 담당이 아닙니다.");
 
     private final String message;

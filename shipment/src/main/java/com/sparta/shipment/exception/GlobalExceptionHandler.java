@@ -1,6 +1,7 @@
 package com.sparta.shipment.exception;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -13,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
 
 @Slf4j
 @RestControllerAdvice
@@ -51,7 +53,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<RestApiException> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         // 예외의 원인 (내부 예외)을 가져옵니다.
         Throwable cause = ex.getCause();
 
@@ -66,12 +68,31 @@ public class GlobalExceptionHandler {
             // 결과 메시지 반환
             String errorMessage = ShipmentCommonExceptionMessage.NOT_ALLOWED_STATUS.getMessage() + enumValues + "]";
 
-            return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
+            RestApiException restApiException = RestApiException.builder()
+                    .errorMessage(errorMessage)
+                    .build();
+            return new ResponseEntity<>(restApiException, HttpStatus.BAD_REQUEST);
         }
 
+        RestApiException restApiException = RestApiException.builder()
+                .errorMessage(ShipmentCommonExceptionMessage.NOT_ALLOWED_STATUS.getMessage())
+                .build();
+
         // 기본적인 오류 메시지 처리
-        return new ResponseEntity<>(ShipmentCommonExceptionMessage.NOT_ALLOWED_STATUS.getMessage(),
+        return new ResponseEntity<>(restApiException,
                 HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(SQLException.class)
+    public ResponseEntity<RestApiException> handlePSQLException(SQLException ex) {
+        RestApiException restApiException = RestApiException.builder()
+                .errorMessage(ex.getMessage())
+                .build();
+
+        return new ResponseEntity<>(
+                restApiException,
+                HttpStatus.BAD_REQUEST
+        );
     }
 
     // 정규 표현식을 사용하여 enum 값들 추출

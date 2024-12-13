@@ -45,17 +45,12 @@ public class ShipmentManagerService {
 
         int shipmentSeq = getNextSequence(request.getManagerType());
 
-        try {
-            ShipmentManager shipmentManager = ShipmentManager.create(shipmentManagerId, request.getUsername(),
-                    request.getInHubId(), request.getManagerType(), shipmentSeq);
+        ShipmentManager shipmentManager = ShipmentManager.create(shipmentManagerId, request.getUsername(),
+                request.getInHubId(), request.getManagerType(), shipmentSeq);
 
-            shipmentManagerRepository.save(shipmentManager);
+        shipmentManagerRepository.save(shipmentManager);
 
-            return ShipmentManagerResponseDto.of(shipmentManager);
-        } catch (Exception e) {
-            rollbackSequence(request.getManagerType(), shipmentSeq);
-            throw e;  // 예외를 다시 던져 트랜잭션 롤백
-        }
+        return ShipmentManagerResponseDto.of(shipmentManager);
 
     }
 
@@ -124,13 +119,6 @@ public class ShipmentManagerService {
         String sql = "SELECT NEXTVAL('" + sequenceName + "')";
         return ((Number) entityManager.createNativeQuery(sql)
                 .getSingleResult()).intValue();
-    }
-
-    // 시퀀스 롤백
-    private void rollbackSequence(String managerType, int shipmentSeq) {
-        String sequenceName = managerType.equals("HUB_SHIPMENT") ? "shipment_seq_hub" : "shipment_seq_comp";
-        String sql = "SELECT setval('" + sequenceName + "', " + shipmentSeq + ")";
-        entityManager.createNativeQuery(sql).executeUpdate();
     }
 
     // 요청 헤더의 role이 MASTER인지 검증하는 메서드

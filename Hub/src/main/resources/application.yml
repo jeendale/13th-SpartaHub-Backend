@@ -24,7 +24,7 @@ spring:
     show-sql: true
   sql:
     init:
-      mode: always #alwqys-> Run할때마다 data.sql 데이터 삽입 never-> data.sql 파일 신경 안씀 (처음 추가한 다음 never 바꿔주세요)
+      mode: never #alwqys-> Run할때마다 data.sql 데이터 삽입 never-> data.sql 파일 신경 안씀 (처음 추가한 다음 never 바꿔주세요)
 
 
 eureka:
@@ -36,4 +36,5 @@ service:
   jwt:
     access-expiration: 3600000
     secret-key: ${JWT_SECRET_KEY}
+server:
   port: 19101

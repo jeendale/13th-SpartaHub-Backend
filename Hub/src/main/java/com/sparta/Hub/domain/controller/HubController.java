@@ -3,7 +3,7 @@ package com.sparta.Hub.domain.controller;
 import com.sparta.Hub.domain.dto.request.CreateHubReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubReq;
 import com.sparta.Hub.domain.dto.response.CreateHubRes;
-import com.sparta.Hub.domain.dto.response.DelteHubRes;
+import com.sparta.Hub.domain.dto.response.DeleteHubRes;
 import com.sparta.Hub.domain.dto.response.GetHubInfoRes;
 import com.sparta.Hub.domain.dto.response.UpdateHubRes;
 import com.sparta.Hub.domain.service.HubService;
@@ -64,7 +64,7 @@ public class HubController {
         return ResponseEntity.status(HttpStatus.OK).body(hubService.updateHub(hubId,updateHubReq,requestUsername,requestRole));
     }
     @DeleteMapping("/{hubId}")
-    public ResponseEntity<DelteHubRes> deleteHub(
+    public ResponseEntity<DeleteHubRes> deleteHub(
         @PathVariable UUID hubId,
         @RequestHeader("X-User-Username") String requestUsername,
         @RequestHeader("X-User-Role") String requestRole){

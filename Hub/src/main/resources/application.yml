@@ -38,3 +38,7 @@ service:
     secret-key: ${JWT_SECRET_KEY}
 server:
   port: 19101
+
+kakao:
+  api:
+    key: bc810dfa4da1b613f598f9e3e098ecc4

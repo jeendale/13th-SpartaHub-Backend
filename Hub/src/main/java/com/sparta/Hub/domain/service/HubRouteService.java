@@ -43,7 +43,7 @@ public class HubRouteService {
       String requestUsername,
       String requestRole
   ) {
-    //validateRole(requestRole);
+    validateRole(requestRole);
     validateEquealHub(createHubRouteReq);
 
     Hub startHub = validateHub(createHubRouteReq.getStratHubId());
@@ -77,6 +77,7 @@ public class HubRouteService {
         .build();
 
   }
+
   private void validateRole(String requestRole) {
     if(!requestRole.equals("MASTER")){
       throw new IllegalArgumentException(HubExceptionMessage.NOT_ALLOWED_API.getMessage());

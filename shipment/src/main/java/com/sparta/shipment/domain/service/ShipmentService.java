@@ -4,6 +4,7 @@ import com.sparta.shipment.domain.dto.request.CreateShipmentRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentRequestDto;
 import com.sparta.shipment.domain.dto.response.ShipmentResponseDto;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
+import com.sparta.shipment.exception.ShipmentExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.model.entity.Shipment;
 import com.sparta.shipment.model.entity.ShipmentManager;
@@ -121,7 +122,7 @@ public class ShipmentService {
         return shipmentRepository.findByShipmentIdAndDeletedFalse(
                         shipmentId)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
+                        ShipmentExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
     }
 
     private ShipmentManager findActiveByShipmentManagerId(UUID shipmentManagerId) {

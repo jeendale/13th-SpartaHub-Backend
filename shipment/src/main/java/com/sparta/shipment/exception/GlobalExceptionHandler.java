@@ -1,8 +1,14 @@
 package com.sparta.shipment.exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,5 +48,45 @@ public class GlobalExceptionHandler {
                 restApiException,
                 HttpStatus.BAD_REQUEST
         );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        // 예외의 원인 (내부 예외)을 가져옵니다.
+        Throwable cause = ex.getCause();
+
+        // JsonMappingException인 경우
+        if (cause instanceof JsonMappingException) {
+            JsonMappingException jsonMappingException = (JsonMappingException) cause;
+
+            // 예외 메시지에서 유효한 enum 값 목록을 추출하기 위한 정규 표현식
+            String message = jsonMappingException.getMessage();
+            String enumValues = extractEnumValues(message);
+
+            // 결과 메시지 반환
+            String errorMessage = ShipmentCommonExceptionMessage.NOT_ALLOWED_STATUS.getMessage() + enumValues + "]";
+
+            return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
+        }
+
+        // 기본적인 오류 메시지 처리
+        return new ResponseEntity<>(ShipmentCommonExceptionMessage.NOT_ALLOWED_STATUS.getMessage(),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    // 정규 표현식을 사용하여 enum 값들 추출
+    private String extractEnumValues(String message) {
+        // 대괄호 안의 값들 추출: [HUB_MOVING, DESTINATION_HUB_ARRIVED, ...]
+        Pattern pattern = Pattern.compile("\\[([^]]+)\\]");
+        Matcher matcher = pattern.matcher(message);
+
+        if (matcher.find()) {
+            // 대괄호 안의 값을 ,로 구분하여 반환
+            String enumList = matcher.group(1);
+            List<String> enumValues = Arrays.asList(enumList.split(", "));
+            return String.join(", ",
+                    enumValues);  // 반환 값: "HUB_MOVING, DESTINATION_HUB_ARRIVED, COMPLETED, SHIPPING, PENDING_HUB_MOVE"
+        }
+        return "";
     }
 }

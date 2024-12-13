@@ -10,6 +10,7 @@ import com.sparta.company.excpetion.UserServiceNotAvailableException;
 import com.sparta.company.infrastructure.dto.GetHubInfoRes;
 import com.sparta.company.infrastructure.dto.UserResponseDto;
 import com.sparta.company.model.entity.Company;
+import com.sparta.company.model.entity.CompanyType;
 import com.sparta.company.model.repository.CompanyRepository;
 import feign.FeignException.BadRequest;
 import feign.FeignException.ServiceUnavailable;
@@ -19,6 +20,8 @@ import io.github.resilience4j.retry.annotation.Retry;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +71,11 @@ public class CompanyService {
                 .companyAddress(company.getCompanyAddress())
                 .companyType(company.getCompanyType())
                 .build();
+    }
+
+    public Page<CompanyResponseDto> getCompanies(String companyName, CompanyType companyType, UUID hubId, Pageable pageable) {
+
+        return companyRepository.searchCompanies(companyName, companyType,hubId, pageable);
     }
 
     @Transactional
@@ -142,7 +150,6 @@ public class CompanyService {
             throw new IllegalArgumentException(CompanyExceptionMessage.NOT_OWN_COMPANY.getMessage());
         }
     }
-
 
     public CompanyIdResponseDto fallback(Throwable throwable) {
         if (throwable instanceof BadRequest) {

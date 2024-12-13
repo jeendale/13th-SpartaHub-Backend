@@ -5,8 +5,12 @@ import com.sparta.company.domain.dto.request.UpdateCompanyRequestDto;
 import com.sparta.company.domain.dto.response.CompanyIdResponseDto;
 import com.sparta.company.domain.dto.response.CompanyResponseDto;
 import com.sparta.company.domain.service.CompanyService;
+import com.sparta.company.model.entity.CompanyType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -43,6 +48,18 @@ public class CompanyController {
         CompanyResponseDto responseDto = companyService.getCompany(companyId);
 
         return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedModel<CompanyResponseDto>> getCompanies(
+            @RequestParam(required = false) String companyName,
+            @RequestParam(required = false) CompanyType companyType,
+            @RequestParam(required = false) UUID hubId,
+            Pageable pageable) {
+
+        Page<CompanyResponseDto> responseDtos = companyService.getCompanies(companyName, companyType,hubId, pageable);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new PagedModel<>(responseDtos));
     }
 
     @PutMapping("/{companyId}")

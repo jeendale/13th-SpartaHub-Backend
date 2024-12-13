@@ -39,7 +39,7 @@ resilience4j:
         ignore-exceptions:
           - feign.FeignException.BadRequest
     instances:
-      userServiceRetry: # Retry 설정 이름
+      userAndHubServiceRetry: # Retry 설정 이름
         base-config: default
 
 server:

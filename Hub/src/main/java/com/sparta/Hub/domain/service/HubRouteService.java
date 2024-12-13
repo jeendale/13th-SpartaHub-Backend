@@ -3,6 +3,7 @@ package com.sparta.Hub.domain.service;
 import com.sparta.Hub.domain.dto.request.CreateHubRouteReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubRouteReq;
 import com.sparta.Hub.domain.dto.response.CreateHubRouteRes;
+import com.sparta.Hub.domain.dto.response.DeleteHubRouteRes;
 import com.sparta.Hub.domain.dto.response.GetHubRouteInfoRes;
 import com.sparta.Hub.domain.dto.response.KakaoApiRes;
 import com.sparta.Hub.domain.dto.response.UpdateHubRouteRes;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
@@ -118,6 +120,19 @@ public class HubRouteService {
 
   }
 
+  @Caching(evict = {
+      @CacheEvict(cacheNames = "hubroutecache",key="args[0]"),
+      @CacheEvict(cacheNames = "hubrouteAllcache",allEntries = true)
+  })
+  public DeleteHubRouteRes deleteHubRoute(UUID hubRouteId, String requestUsername, String requestRole) {
+    validateRole(requestRole);
+    HubRoute hubRoute = validateExistHubRoute(hubRouteId);
+    hubRoute.updateDeleted(requestUsername);
+    hubRouteRepository.save(hubRoute);
+    return new DeleteHubRouteRes(hubRouteId);
+  }
+
+
   private void validateRole(String requestRole) {
     if (!requestRole.equals("MASTER")) {
       throw new IllegalArgumentException(HubExceptionMessage.NOT_ALLOWED_API.getMessage());
@@ -196,4 +211,6 @@ public class HubRouteService {
     return hubRoute;
 
   }
+
+
 }

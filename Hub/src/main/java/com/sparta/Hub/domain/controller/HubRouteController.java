@@ -3,6 +3,7 @@ package com.sparta.Hub.domain.controller;
 import com.sparta.Hub.domain.dto.request.CreateHubRouteReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubRouteReq;
 import com.sparta.Hub.domain.dto.response.CreateHubRouteRes;
+import com.sparta.Hub.domain.dto.response.DeleteHubRouteRes;
 import com.sparta.Hub.domain.dto.response.GetHubRouteInfoRes;
 import com.sparta.Hub.domain.dto.response.UpdateHubRouteRes;
 import com.sparta.Hub.domain.service.HubRouteService;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,6 +67,13 @@ public class HubRouteController {
         .status(HttpStatus.OK)
         .body(hubRouteService.updateHubRoute(hubRouteId,updateHubRouteReq,requestUsername,requestRole));
   }
-
+  @DeleteMapping("/{hubRouteId}")
+  public ResponseEntity<DeleteHubRouteRes> deleteHubRoute(
+      @PathVariable UUID hubRouteId,
+      @RequestHeader("X-User-Username") String requestUsername,
+      @RequestHeader("X-User_Role") String requestRole
+  ){
+    return ResponseEntity.status(HttpStatus.OK).body(hubRouteService.deleteHubRoute(hubRouteId,requestUsername,requestRole));
+  }
 
 }

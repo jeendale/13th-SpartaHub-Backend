@@ -18,6 +18,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,13 +55,16 @@ public class HubRouteService {
       String requestUsername,
       String requestRole
   ) {
-    validateRole(requestRole);
+    //validateRole(requestRole);
     validateEquealHub(createHubRouteReq);
 
     Hub startHub = validateHub(createHubRouteReq.getStratHubId());
     Hub endHub = validateHub(createHubRouteReq.getEndHubId());
 
-    KakaoApiRes kakaoApiRes = KakaoMapApi(startHub, endHub);
+    Map<String, Integer> startRouteInfo = checkCenterHub(startHub);
+    Map<String, Integer> endRouteInfo = checkCenterHub(startHub);
+
+    KakaoApiRes kakaoApiRes = finalRouteInfo(startHub, endHub, startRouteInfo, endRouteInfo);
     HubRoute hubRoute = HubRoute.builder()
         .startHub(startHub)
         .endHub(endHub)
@@ -78,6 +84,7 @@ public class HubRouteService {
         .distance(hubRoute.getDistance())
         .build();
   }
+
 
   @Cacheable(cacheNames = "hubroutecache", key = "args[0]")
   public GetHubRouteInfoRes getHubRoute(UUID hubRouteId) {
@@ -121,10 +128,11 @@ public class HubRouteService {
   }
 
   @Caching(evict = {
-      @CacheEvict(cacheNames = "hubroutecache",key="args[0]"),
-      @CacheEvict(cacheNames = "hubrouteAllcache",allEntries = true)
+      @CacheEvict(cacheNames = "hubroutecache", key = "args[0]"),
+      @CacheEvict(cacheNames = "hubrouteAllcache", allEntries = true)
   })
-  public DeleteHubRouteRes deleteHubRoute(UUID hubRouteId, String requestUsername, String requestRole) {
+  public DeleteHubRouteRes deleteHubRoute(UUID hubRouteId, String requestUsername,
+      String requestRole) {
     validateRole(requestRole);
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
     hubRoute.updateDeleted(requestUsername);
@@ -157,8 +165,85 @@ public class HubRouteService {
         HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
   }
 
+  private Map<String, Integer> checkCenterHub(Hub hub) {
 
-  private KakaoApiRes KakaoMapApi(Hub startHub, Hub endHub) {
+    if (hub.isCenterHub()) {
+      Map<String, Integer> routeInfo = new HashMap<>();
+      routeInfo.put("distance", 0);
+      routeInfo.put("deliveryTime", 0);
+      return routeInfo;
+    }
+
+    return kakaoMapApi(hub, hub.getCenterHub());
+  }
+
+  private KakaoApiRes finalRouteInfo(
+      Hub startHub,
+      Hub endHub,
+      Map<String, Integer> startRouteInfo,
+      Map<String, Integer> endRouteInfo
+  ) {
+    Map<String, Integer> routeInfo = new HashMap<>();
+    if(startHub.isCenterHub()&&endHub.isCenterHub()){
+      routeInfo=kakaoMapApi(startHub,endHub);
+      return changeRouteInfo(routeInfo);
+    }
+    if (startHub.getCenterHub().equals(endHub.getCenterHub())) {
+      System.out.println(startHub.getCenterHub().getHubname()+"같은 중앙허브");
+      routeInfo.put("distance", startRouteInfo.get("distance") + endRouteInfo.get("distance"));
+      routeInfo.put("deliveryTime",
+          startRouteInfo.get("deliveryTime") + endRouteInfo.get("deliveryTime"));
+
+      return changeRouteInfo(routeInfo);
+    } else if (startHub.getCenterHub().getHubname().equals("경기 남부 센터")
+        || startHub.getCenterHub().getHubname().equals("대구광역시 센터")) {
+      if (endHub.getCenterHub().getHubname().equals("대전광역시 센터")) {
+        Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(),
+            endHub.getCenterHub());
+        Integer distnace = finalRoute.get("distance")
+            + endRouteInfo.get("distance")
+            + startRouteInfo.get("distance");
+        Integer deliveryTime = finalRoute.get("deliveryTime")
+            + endRouteInfo.get("deliveryTime")
+            + startRouteInfo.get("deliveryTime");
+        routeInfo.put("distance", distnace);
+        routeInfo.put("deliveryTime", deliveryTime);
+        return changeRouteInfo(routeInfo);
+
+      } else {
+        Hub centerHub = hubRepository.findByHubname("대전광역시 센터");
+
+        routeInfo = kakaoMapApi(centerHub, startHub);
+        Map<String, Integer> finalRoute = kakaoMapApi(endHub, centerHub);
+
+        Integer distance = finalRoute.get("distance")
+            + startRouteInfo.get("distance")
+            + endRouteInfo.get("distance")
+            + routeInfo.get("distance");
+        Integer deliveryTime = finalRoute.get("deliveryTime")
+            + endRouteInfo.get("deliveryTime")
+            + startRouteInfo.get("deliveryTime")
+            + routeInfo.get("deliveryTime");
+        routeInfo.put("distance", distance);
+        routeInfo.put("deliveryTime", deliveryTime);
+        return changeRouteInfo(routeInfo);
+      }
+    } else {
+      Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(), endHub.getCenterHub());
+      Integer distance = finalRoute.get("distance")
+          + endRouteInfo.get("distance")
+          + startRouteInfo.get("distance");
+      Integer deliveryTime = finalRoute.get("deliveryTime")
+          + endRouteInfo.get("deliveryTime")
+          + startRouteInfo.get("deliveryTime");
+      routeInfo.put("distance", distance);
+      routeInfo.put("deliveryTime", deliveryTime);
+      return changeRouteInfo(routeInfo);
+
+    }
+  }
+
+  private Map<String, Integer> kakaoMapApi(Hub startHub, Hub endHub) {
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(List.of(MediaType.APPLICATION_JSON));
     headers.setContentType(MediaType.APPLICATION_JSON);
@@ -183,10 +268,19 @@ public class HubRouteService {
     Object duration = summary.get("duration");
     Integer meter = (Integer) distance;
     Integer second = (Integer) duration;
+    Map<String, Integer> routeInfo = new HashMap<>();
+    routeInfo.put("distance", meter);
+    routeInfo.put("deliveryTime", second);
 
-    LocalDateTime deliveryTime = LocalDateTime.now().plus(Duration.ofSeconds(second));
+    return routeInfo;
 
-    BigDecimal meterBD = new BigDecimal(meter);
+  }
+
+  private KakaoApiRes changeRouteInfo(Map<String, Integer> routeInfo) {
+    LocalDateTime deliveryTime = LocalDateTime.now()
+        .plus(Duration.ofSeconds(routeInfo.get("deliveryTime")));
+
+    BigDecimal meterBD = new BigDecimal(routeInfo.get("distance"));
     BigDecimal kilometerBD = meterBD.divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
 
     // 응답 본문에서 필요한 필드만 추출
@@ -203,7 +297,10 @@ public class HubRouteService {
       Hub endHub = validateHub(updateHubRouteReq.getEndHubId());
       hubRoute.updateEndHubRoute(endHub);
 
-      KakaoApiRes kakaoApiRes = KakaoMapApi(hubRoute.getStartHub(), endHub);
+      Map<String, Integer> startRouteInfo = checkCenterHub(hubRoute.getStartHub());
+      Map<String, Integer> endRouteInfo = checkCenterHub(endHub);
+
+      KakaoApiRes kakaoApiRes = finalRouteInfo(hubRoute.getStartHub(), endHub, startRouteInfo, endRouteInfo);
 
       hubRoute.updateRoad(kakaoApiRes.getDeliveryTime(), kakaoApiRes.getDistance());
       return hubRoute;

@@ -8,10 +8,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @Builder
-public class DelteHubRes {
+public class DeleteHubRes {
   private UUID hubId;
 
-  public DelteHubRes(UUID hubId) {
+  public DeleteHubRes(UUID hubId) {
     this.hubId = hubId;
   }
 }

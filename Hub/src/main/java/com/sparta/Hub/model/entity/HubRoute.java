@@ -9,6 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,23 +28,35 @@ public class HubRoute extends Audit {
   private UUID hubId;
 
   @Column(nullable = false)
-  private Timestamp deliveryTime;
+  private LocalDateTime deliveryTime;
   @Column(nullable = false)
   private BigDecimal distance;
+  @Column(nullable = false)
+  private String startHubName;
+  @Column(nullable = false)
+  private String endHubName;
 
   @ManyToOne
-  @JoinColumn(name = "hub_id", nullable = false)
+  @JoinColumn(name = "start_hub_id", nullable = false)
   private Hub startHub;
 
   @ManyToOne
-  @JoinColumn(name = "hub_id", nullable = false)
+  @JoinColumn(name = "end_hub_id", nullable = false)
   private Hub endHub;
 
-  public HubRoute(Timestamp deliveryTime, BigDecimal distance, Hub startHub, Hub endHub) {
+  public HubRoute(LocalDateTime deliveryTime, BigDecimal distance, Hub startHub, Hub endHub) {
     this.deliveryTime = deliveryTime;
     this.distance = distance;
     this.startHub = startHub;
     this.endHub = endHub;
   }
 
+  public void updateEndHubRoute(Hub endHub) {
+    this.endHub = endHub;
+  }
+
+  public void updateRoad(LocalDateTime deliveryTime, BigDecimal distance) {
+    this.deliveryTime = deliveryTime;
+    this.distance = distance;
+  }
 }

@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: ${ACTIVE}
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19090/eureka/
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 5
+        slowCallRateThreshold: 100
+        slowCallDurationThreshold: 60000
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 20s
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration:
+          seconds: 3
+        ignore-exceptions:
+          - feign.FeignException.BadRequest
+    instances:
+      userAndHubServiceRetry: # Retry 설정 이름
+        base-config: default
+
+server:
+  port: 19097
+
+logging:
+  level:
+    io.github.resilience4j.retry: TRACE

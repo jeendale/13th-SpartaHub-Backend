@@ -11,4 +11,5 @@ public class CreateHubReq {
     private double lati;
     private double longti;
     private boolean isCenterHub;
+    private String username;
 }

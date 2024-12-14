@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface HubRepository extends JpaRepository<Hub, UUID> ,HubCustomRepository{
 
+  Hub findByHubname(String hubname);
 }

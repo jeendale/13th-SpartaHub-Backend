@@ -5,27 +5,36 @@ import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
+import com.sparta.shipment.exception.FeignClientExceptionMessage;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
+import com.sparta.shipment.infrastructure.dto.GetHubInfoRes;
+import com.sparta.shipment.infrastructure.dto.UserResponseDto;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ShipmentManagerService {
 
     @PersistenceContext
     private final EntityManager entityManager;
 
     private final ShipmentManagerRepository shipmentManagerRepository;
+    private final UserClientService userClientService;
+    private final HubClientService hubClientService;
 
     @Transactional
     public ShipmentManagerResponseDto createShipmentManager(CreateShipmentManagerRequestDto request,
@@ -34,9 +43,17 @@ public class ShipmentManagerService {
 
         validateRole(requestRole);
 
-        // TODO: user와 연결해서 username값 있는지, 해당 username 권한이 SHIPMENT_MANAGER 인지 확인
-        // TODO: HUB와 연결해서 hubId 있는지 확인
         // TODO: 인원도 10명까지만 가능한가?
+
+        GetHubInfoRes getHubInfoRes = validateHub(request.getInHubId());
+        ;
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (!getHubInfoRes.getUserName().equals(requestUsername)) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
+            }
+        }
+
+        validateUserRoleIsShipmentManager(request.getUsername());
 
         UUID shipmentManagerId = UUID.randomUUID();
         while (shipmentManagerRepository.existsById(shipmentManagerId)) {
@@ -46,7 +63,7 @@ public class ShipmentManagerService {
         int shipmentSeq = getNextSequence(request.getManagerType());
 
         ShipmentManager shipmentManager = ShipmentManager.create(shipmentManagerId, request.getUsername(),
-                request.getInHubId(), request.getManagerType(), shipmentSeq);
+                request.getInHubId(), request.getManagerType(), false, shipmentSeq);
 
         shipmentManagerRepository.save(shipmentManager);
 
@@ -61,6 +78,14 @@ public class ShipmentManagerService {
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
+        GetHubInfoRes getHubInfoRes = validateHub(shipmentManager.getInHubId());
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (!getHubInfoRes.getUserName().equals(requestUsername)) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
+            }
+        }
+
         shipmentManager.updateDeleted(requestUsername);
 
         return ShipmentManagerResponseDto.of(shipmentManager);
@@ -74,11 +99,20 @@ public class ShipmentManagerService {
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
+        GetHubInfoRes getHubInfoRes = validateHub(shipmentManager.getInHubId());
+        
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (!getHubInfoRes.getUserName().equals(requestUsername)) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
+            }
+        }
+
         ShipmentManager updatedShipmentManager = ShipmentManager.create(shipmentManagerId,
                 shipmentManager.getUsername(),
                 request.getInHubId() != null ? request.getInHubId() : shipmentManager.getInHubId(),
                 request.getManagerType() != null ? request.getManagerType()
                         : shipmentManager.getManagerType().toString(),
+                request.getIsShipping() != null ? request.getIsShipping() : shipmentManager.getIsShipping(),
                 shipmentManager.getShipmentSeq());
 
         shipmentManagerRepository.save(updatedShipmentManager);
@@ -146,4 +180,25 @@ public class ShipmentManagerService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
     }
+
+    private void validateUserRoleIsShipmentManager(String username) {
+        log.info("User request for username: {}", username);
+        UserResponseDto userResponseDto = Optional.ofNullable(userClientService.getUser(username))
+                .orElseThrow(
+                        () -> new IllegalArgumentException(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage()));
+
+        if (!userResponseDto.getRole().equals("SHIPMENT_MANAGER")) {
+            throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_USER.getMessage());
+        }
+    }
+
+    private GetHubInfoRes validateHub(UUID hubId) {
+        log.info("Hub request for hubId: {}", hubId);
+
+        return Optional.ofNullable(hubClientService.getHub(hubId))
+                .orElseThrow(
+                        () -> new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage()));
+
+    }
+
 }

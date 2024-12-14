@@ -13,5 +13,7 @@ public class UpdateShipmentManagerRequestDto {
 
     private UUID inHubId;
     private String managerType;
+    private Boolean isShipping;
+
 
 }

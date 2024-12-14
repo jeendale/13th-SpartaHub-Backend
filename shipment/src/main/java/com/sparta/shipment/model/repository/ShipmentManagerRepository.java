@@ -9,4 +9,7 @@ public interface ShipmentManagerRepository extends JpaRepository<ShipmentManager
         ShipmentManagerRepositoryCustom {
 
     Optional<ShipmentManager> findByShipmentManagerIdAndDeletedFalse(UUID shipmentManagerId);
+
+    Optional<ShipmentManager> findFirstByHubIdAndIsShippingFalseAndManagerTypeAndDeleteFalseOrderBySeqAsc(UUID inHubId,
+                                                                                                          String managerType);
 }

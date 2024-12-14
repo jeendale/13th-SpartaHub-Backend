@@ -25,8 +25,8 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler({UserServiceNotAvailableException.class})
-    public ResponseEntity<RestApiException> userServiceNotAvailableException(final UserServiceNotAvailableException ex) {
+    @ExceptionHandler({ServiceNotAvailableException.class})
+    public ResponseEntity<RestApiException> userServiceNotAvailableException(final ServiceNotAvailableException ex) {
 
         log.warn("UserServiceNotAvailableException 발생: {}", ex.getMessage());
 

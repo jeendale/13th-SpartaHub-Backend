@@ -6,7 +6,7 @@ import com.sparta.company.domain.dto.response.CompanyIdResponseDto;
 import com.sparta.company.domain.dto.response.CompanyResponseDto;
 import com.sparta.company.excpetion.CompanyExceptionMessage;
 import com.sparta.company.excpetion.FeignClientExceptionMessage;
-import com.sparta.company.excpetion.UserServiceNotAvailableException;
+import com.sparta.company.excpetion.ServiceNotAvailableException;
 import com.sparta.company.infrastructure.dto.GetHubInfoRes;
 import com.sparta.company.infrastructure.dto.UserResponseDto;
 import com.sparta.company.model.entity.Company;
@@ -176,12 +176,12 @@ public class CompanyService {
 
         if (throwable instanceof RetryableException) {
             log.warn("RetryableException 발생");
-            throw new UserServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+            throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
         }
 
         if (throwable instanceof ServiceUnavailable) {
             log.warn("ServiceUnavailableException 발생");
-            throw new UserServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+            throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
         }
 
         log.warn("기타 예외 발생: {}", String.valueOf(throwable));

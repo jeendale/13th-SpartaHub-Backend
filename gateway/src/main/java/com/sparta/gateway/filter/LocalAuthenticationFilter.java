@@ -28,7 +28,7 @@ public class LocalAuthenticationFilter implements GlobalFilter {
                         .build())
                 .build();
 
-        if (path.equals("/api/v1/auth") || path.equals("/api/v1/users/signup")) {
+        if (path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/signup")) {
             return chain.filter(exchange);
         }
 

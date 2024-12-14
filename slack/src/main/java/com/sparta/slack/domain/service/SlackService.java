@@ -11,6 +11,8 @@ import com.sparta.slack.model.repository.SlackRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +53,8 @@ public class SlackService {
                         () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
                 );
 
+        validateDeleted(slackHistory);
+
         return SlackHistoryResponseDto.builder()
                 .slackHistoryId(slackHistory.getSlackHistoryId())
                 .username(slackHistory.getUsername())
@@ -58,6 +62,12 @@ public class SlackService {
                 .message(slackHistory.getMessage())
                 .sentAt(slackHistory.getSentAt())
                 .build();
+    }
+
+    public Page<SlackHistoryResponseDto> getSlackHistories(String recievedSlackId, Pageable pageable, String requestRole) {
+        validateRequestRole(requestRole);
+
+        return slackRepository.searchSlackHistories(recievedSlackId, pageable);
     }
 
     @Transactional
@@ -68,6 +78,8 @@ public class SlackService {
                 .orElseThrow(
                         () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
                 );
+
+        validateDeleted(slackHistory);
 
         slackHistory.updateMessage(requestDto.getMessage());
 
@@ -85,6 +97,8 @@ public class SlackService {
                         () -> new IllegalArgumentException(SlackExceptionMessage.SLACK_HISTORY_NOT_FOUND.getMessage())
                 );
 
+        validateDeleted(slackHistory);
+
         slackHistory.updateDeleted(requestUsername);
 
         return SlackHistoryIdResponseDto.builder()
@@ -95,6 +109,12 @@ public class SlackService {
     private void validateRequestRole(String requestRole) {
         if (!requestRole.equals("MASTER")) {
             throw new IllegalArgumentException(SlackExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+    }
+
+    private void validateDeleted(SlackHistory slackHistory) {
+        if (slackHistory.isDeleted()) {
+            throw new IllegalArgumentException(SlackExceptionMessage.DELETED_SLACK_HISTORY.getMessage());
         }
     }
 }

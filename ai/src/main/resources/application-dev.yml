@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${LOCAL_DB_ENDPOINT}/spartahub
+    username: ${LOCAL_DB_USERNAME}
+    password: ${LOCAL_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update

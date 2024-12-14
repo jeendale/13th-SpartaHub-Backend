@@ -37,7 +37,7 @@ public class CompanyService {
 
     @Transactional
     @Retry(name = "userServiceRetry")
-    @CircuitBreaker(name = "userAndHubService", fallbackMethod = "fallback")
+    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
     // Hub 구현 시 HUB_MANAGER 가 생성 시 요청 HubId가 담당 허브의 HubId 인지 검증 필요
     public CompanyIdResponseDto createCompany(
             CompanyRequestDto requestDto,
@@ -81,7 +81,7 @@ public class CompanyService {
     }
 
     @Transactional
-    @CircuitBreaker(name = "userAndHubService", fallbackMethod = "fallback")
+    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
     public CompanyIdResponseDto updateCompany(
             UUID companyId,
             UpdateCompanyRequestDto requestDto,
@@ -185,6 +185,6 @@ public class CompanyService {
         }
 
         log.warn("기타 예외 발생: {}", String.valueOf(throwable));
-        return null;
+        throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
     }
 }

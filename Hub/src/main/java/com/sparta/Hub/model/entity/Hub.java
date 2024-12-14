@@ -32,6 +32,8 @@ public class Hub extends Audit{
     private String address;
     @Column(nullable = false)
     private boolean isCenterHub;
+    @Column(nullable = false)
+    private String username;
 
     @ManyToOne
     @JoinColumn(name="center_hub_id",referencedColumnName = "hubId")
@@ -60,5 +62,9 @@ public class Hub extends Audit{
 
     public void updateIsCenterHub(boolean b) {
         this.isCenterHub = b;
+    }
+
+    public void updateHubManger(String username) {
+        this.username = username;
     }
 }

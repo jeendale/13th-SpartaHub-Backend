@@ -61,6 +61,8 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
 
+        validateDeletedProduct(product);
+
         if (requestRole.equals("HUB_MANAGER")) {
             GetHubInfoRes getHubInfoRes = getHubInfoRes(product.getHubId());
             validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
@@ -74,12 +76,15 @@ public class ProductService {
                 .build();
     }
 
+    @Transactional
     @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
     public ProductIdResponseDto updateProduct(UUID productId, UpdateProductRequestDto requestDto, String requestUsername, String requestRole) {
         validateRequestRole(requestRole);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+
+        validateDeletedProduct(product);
 
         GetHubInfoRes getHubInfoRes = getHubInfoRes(product.getHubId());
 
@@ -100,6 +105,29 @@ public class ProductService {
                 .build();
     }
 
+    @Transactional
+    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
+    public ProductIdResponseDto deleteProduct(UUID productId, String requestUsername, String requestRole) {
+        validateDeleteRequestRole(requestRole);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+
+        validateDeletedProduct(product);
+
+        GetHubInfoRes getHubInfoRes = getHubInfoRes(product.getHubId());
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+        }
+
+        product.updateDeleted(requestUsername);
+
+        return ProductIdResponseDto.builder()
+                .productId(product.getProductId())
+                .build();
+    }
+
     private GetHubInfoRes getHubInfoRes(UUID requestHubId) {
         return hubClientService.getHub(requestHubId).getBody();
     }
@@ -111,6 +139,18 @@ public class ProductService {
     private void validateRequestRole(String requestRole) {
         if (!requestRole.equals("HUB_MANAGER") && !requestRole.equals("COMPANY_MANAGER") && !requestRole.equals("MASTER")) {
             throw new IllegalArgumentException(ProductExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+    }
+
+    private void validateDeleteRequestRole(String requestRole) {
+        if (!requestRole.equals("HUB_MANAGER") && !requestRole.equals("MASTER")) {
+            throw new IllegalArgumentException(ProductExceptionMessage.NOT_ALLOWED_API.getMessage());
+        }
+    }
+
+    private void validateDeletedProduct(Product product) {
+        if (product.isDeleted()) {
+            throw new IllegalArgumentException(ProductExceptionMessage.DELETED_PRODUCT.getMessage());
         }
     }
 

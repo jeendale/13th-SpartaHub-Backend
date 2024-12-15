@@ -16,11 +16,6 @@ import com.sparta.Hub.model.repository.HubRouteRepository;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,10 +39,6 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class HubRouteService {
 
-  private static final String CENTER_GYEONGGI_SOUTH = "경기 남부 센터";
-  private static final String CENTER_DAEGU = "대구광역시 센터";
-  private static final String CENTER_DAEJEON = "대전광역시 센터";
-
   @Value("${kakao.api.key}")
   private String apiKey;
 
@@ -56,10 +47,9 @@ public class HubRouteService {
 
   public CreateHubRouteRes createHubRoute(
       CreateHubRouteReq createHubRouteReq,
-      String requestUsername,
       String requestRole
   ) {
-    //validateRole(requestRole);
+    validateRole(requestRole);
     validateEquealHub(createHubRouteReq);
 
     Hub startHub = validateHub(createHubRouteReq.getStartHubId());
@@ -95,6 +85,8 @@ public class HubRouteService {
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
     return GetHubRouteInfoRes.builder()
         .hubRouteId(hubRoute.getHubId())
+        .startHubId(hubRoute.getStartHub().getHubId())
+        .endHubId(hubRoute.getEndHub().getHubId())
         .startHubName(hubRoute.getStartHubName())
         .endHubName(hubRoute.getEndHubName())
         .distance(hubRoute.getDistance())
@@ -107,6 +99,7 @@ public class HubRouteService {
   public Page<GetHubRouteInfoRes> getAllHubRoutes(String keyword, Pageable pageable) {
     return hubRouteRepository.searchHubRoutes(keyword, pageable);
   }
+
   @Cacheable(cacheNames = "hubrouteAllcache", key = "getMethodName()")
   public Page<GetHubRouteInfoRes> getHubRoutesByHubIds(
       UUID startHubId,
@@ -120,10 +113,9 @@ public class HubRouteService {
   public UpdateHubRouteRes updateHubRoute(
       UUID hubRouteId,
       UpdateHubRouteReq updateHubRouteReq,
-      String requestUsername,
       String requestRole
   ) {
-    //validateRole(requestRole);
+    validateRole(requestRole);
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
 
 

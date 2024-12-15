@@ -40,32 +40,9 @@ public class ShipmentService {
     private final ShipmentRouteService shipmentRouteService;
 
     @Transactional
-    public ShipmentResponseDto createShipment(CreateShipmentRequestDto request, String requestUsername,
-                                              String requestRole) {
+    public ShipmentResponseDto createShipment(CreateShipmentRequestDto request, String requestRole) {
 
         validateCreateRole(requestRole);
-        /*
-        List<GetHubInfoRes> getHubInfoRes = Optional.ofNullable(hubClientService.getAllHubs())
-                .filter(hubs -> !hubs.isEmpty())  // 리스트가 비어 있지 않은지 체크
-                .orElseThrow(
-                        () -> new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage()));
-
-        // 요청의 startHubId와 endHubId 값이 리스트에 존재하는지 확인
-        boolean containsStartHubId = getHubInfoRes.stream()
-                .anyMatch(hub -> hub.getHubId().equals(request.getStartHubId()));
-
-        if (!containsStartHubId) {
-            throw new IllegalArgumentException("StartHubId가 " + FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
-        }
-
-        boolean containsEndHubId = getHubInfoRes.stream()
-                .anyMatch(hub -> hub.getHubId().equals(request.getEndHubId()));
-
-        if (!containsEndHubId) {
-            throw new IllegalArgumentException("EndHubId가 " + FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
-        }
-
-         */
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(request.getEndHubId());
 
@@ -84,18 +61,6 @@ public class ShipmentService {
 
         shipmentRepository.save(shipment);
 
-        /*데이터 생성해서 해보기
-        GetHubRouteInfoRes info = new GetHubRouteInfoRes(
-                UUID.fromString("123495c6-ae55-4bd9-96e9-266311af02be"),  // hubRouteId (UUID)
-                UUID.fromString("02924f0d-13f2-44f1-9f85-a52c42fc1232"),  // hubRouteId (UUID)
-                UUID.fromString("579395c6-ae55-4bd9-96e9-266311af02be"),  // endHubId (UUID
-                BigDecimal.valueOf(123.40),
-                BigDecimal.valueOf(12)                                   // distance (BigDecimal)
-
-        );
-
-         */
-
         Page<GetHubRouteInfoRes> infoRes = hubClientService.getHubRoutesByHubIds(
                 request.getStartHubId(), request.getEndHubId(), Pageable.unpaged());
 
@@ -112,8 +77,7 @@ public class ShipmentService {
                 request.getStartHubId(), request.getEndHubId(), getHubRouteInfoRes.getDistance(),
                 getHubRouteInfoRes.getDeliveryTime(), null, null,
                 "PENDING_HUB_MOVE");
-        ShipmentRouteResponseDto shipmentRoutes = shipmentRouteService.createShipmentRoute(requestDto, requestUsername,
-                requestRole);
+        ShipmentRouteResponseDto shipmentRoutes = shipmentRouteService.createShipmentRoute(requestDto, requestRole);
 
         return ShipmentResponseDto.of(shipment);
 

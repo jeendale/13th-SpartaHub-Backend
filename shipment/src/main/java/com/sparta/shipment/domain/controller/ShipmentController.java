@@ -39,7 +39,7 @@ public class ShipmentController {
             @Valid @RequestBody CreateShipmentRequestDto request,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
-        ShipmentResponseDto response = shipmentService.createShipment(request, requestUsername, requestRole);
+        ShipmentResponseDto response = shipmentService.createShipment(request, requestRole);
         return ResponseEntity.status(HttpStatus.CREATED).body((response));
     }
 

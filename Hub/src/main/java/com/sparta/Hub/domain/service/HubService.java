@@ -179,7 +179,14 @@ public class HubService {
             throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
         }
 
+        if (throwable instanceof IllegalArgumentException) {
+            log.warn("IllegalArgumentException 발생");
+            throw new IllegalArgumentException(throwable.getMessage());
+        }
+
         log.warn("기타 예외 발생: {}", String.valueOf(throwable));
         throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+
+
     }
 }

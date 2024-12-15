@@ -1,6 +1,5 @@
 package com.sparta.shipment.domain.service;
 
-import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
 import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
@@ -45,13 +44,7 @@ public class ShipmentManagerService {
 
         // TODO: 인원도 10명까지만 가능한가?
 
-        GetHubInfoRes getHubInfoRes = validateHub(request.getInHubId());
-        ;
-        if (requestRole.equals("HUB_MANAGER")) {
-            if (!getHubInfoRes.getUserName().equals(requestUsername)) {
-                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
-            }
-        }
+        validateHub(request.getInHubId(), requestUsername, requestRole);
 
         validateUserRoleIsShipmentManager(request.getUsername());
 
@@ -78,13 +71,7 @@ public class ShipmentManagerService {
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
-        GetHubInfoRes getHubInfoRes = validateHub(shipmentManager.getInHubId());
-
-        if (requestRole.equals("HUB_MANAGER")) {
-            if (!getHubInfoRes.getUserName().equals(requestUsername)) {
-                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
-            }
-        }
+        validateHub(shipmentManager.getInHubId(), requestUsername, requestRole);
 
         shipmentManager.updateDeleted(requestUsername);
 
@@ -99,13 +86,7 @@ public class ShipmentManagerService {
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
 
-        GetHubInfoRes getHubInfoRes = validateHub(shipmentManager.getInHubId());
-        
-        if (requestRole.equals("HUB_MANAGER")) {
-            if (!getHubInfoRes.getUserName().equals(requestUsername)) {
-                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
-            }
-        }
+        validateHub(shipmentManager.getInHubId(), requestUsername, requestRole);
 
         ShipmentManager updatedShipmentManager = ShipmentManager.create(shipmentManagerId,
                 shipmentManager.getUsername(),
@@ -128,6 +109,7 @@ public class ShipmentManagerService {
         validateGetByIdRole(requestRole);
 
         ShipmentManager shipmentManager = findActiveByShipmentManagerId(shipmentManagerId);
+        validateHub(shipmentManager.getInHubId(), requestUsername, requestRole);
 
         if (requestRole.equals("SHIPMENT_MANAGER")) {
             if (!shipmentManager.getUsername().equals(requestUsername)) {
@@ -139,12 +121,19 @@ public class ShipmentManagerService {
     }
 
     @Transactional
-    public Page<GetShipmentManagerResponseDto> getShipmentManagers(ShipmentManagerSearchDto searchDto,
+    public Page<GetShipmentManagerResponseDto> getShipmentManagers(String username, String managerType, UUID hubId,
                                                                    Pageable pageable, String requestUsername,
                                                                    String requestRole) {
         validateRole(requestRole);
 
-        return shipmentManagerRepository.searchShipmentManagers(searchDto, pageable);
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (hubId == null) {
+                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.REQUIRE_HUB_ID.getMessage());
+            }
+            validateHub(hubId, requestUsername, requestRole);
+        }
+
+        return shipmentManagerRepository.searchShipmentManagers(username, managerType, hubId, pageable);
     }
 
     private int getNextSequence(String managerType) {
@@ -192,12 +181,17 @@ public class ShipmentManagerService {
         }
     }
 
-    private GetHubInfoRes validateHub(UUID hubId) {
+    private void validateHub(UUID hubId, String requestUsername, String requestRole) {
         log.info("Hub request for hubId: {}", hubId);
 
-        return Optional.ofNullable(hubClientService.getHub(hubId))
-                .orElseThrow(
-                        () -> new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage()));
+        GetHubInfoRes getHubInfoRes = Optional.ofNullable(hubClientService.getHub(hubId)).orElseThrow(
+                () -> new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage()));
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (!getHubInfoRes.getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
+            }
+        }
 
     }
 

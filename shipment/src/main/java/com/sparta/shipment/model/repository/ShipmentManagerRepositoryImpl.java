@@ -6,13 +6,13 @@ import static com.sparta.shipment.model.entity.QShipmentManager.shipmentManager;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
 import com.sparta.shipment.model.entity.QShipmentManager;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,7 +26,7 @@ public class ShipmentManagerRepositoryImpl implements ShipmentManagerRepositoryC
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<GetShipmentManagerResponseDto> searchShipmentManagers(ShipmentManagerSearchDto searchDto,
+    public Page<GetShipmentManagerResponseDto> searchShipmentManagers(String username, String managerType, UUID hubId,
                                                                       Pageable pageable) {
         List<OrderSpecifier<?>> orders = getAllOrderSpecifiers(pageable);
 
@@ -35,8 +35,8 @@ public class ShipmentManagerRepositoryImpl implements ShipmentManagerRepositoryC
                 .select(shipmentManager.shipmentManagerId.count())
                 .from(QShipmentManager.shipmentManager)
                 .where(
-                        usernameContains(searchDto.username()),
-                        managerTypeIsValid(searchDto.managerType()),
+                        usernameContains(username),
+                        managerTypeIsValid(managerType),
                         isNotDeleted()
                 )
                 .fetchOne()).orElse(0L);
@@ -46,8 +46,8 @@ public class ShipmentManagerRepositoryImpl implements ShipmentManagerRepositoryC
         List<ShipmentManager> results = queryFactory
                 .selectFrom(QShipmentManager.shipmentManager)
                 .where(
-                        usernameContains(searchDto.username()),
-                        managerTypeIsValid(searchDto.managerType()),
+                        usernameContains(username),
+                        managerTypeIsValid(managerType),
                         isNotDeleted()
                 )
                 .orderBy(orders.toArray(new OrderSpecifier[0]))

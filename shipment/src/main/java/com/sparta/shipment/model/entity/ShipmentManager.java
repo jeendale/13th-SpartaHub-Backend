@@ -57,4 +57,10 @@ public class ShipmentManager extends Audit {
     public void changeShippingStatus(Boolean isShipping) {
         this.isShipping = isShipping;
     }
+
+    public void changeInHub(UUID inHubId) {
+        this.inHubId = inHubId;
+    }
+
+
 }

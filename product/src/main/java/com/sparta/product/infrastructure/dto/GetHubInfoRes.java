@@ -1,4 +1,4 @@
-package com.sparta.company.infrastructure.dto;
+package com.sparta.product.infrastructure.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;

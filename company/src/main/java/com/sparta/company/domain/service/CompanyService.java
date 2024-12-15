@@ -16,7 +16,6 @@ import feign.FeignException.BadRequest;
 import feign.FeignException.ServiceUnavailable;
 import feign.RetryableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,19 +35,22 @@ public class CompanyService {
     private final HubClientService hubClientService;
 
     @Transactional
-    @Retry(name = "userServiceRetry")
     @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
-    // Hub 구현 시 HUB_MANAGER 가 생성 시 요청 HubId가 담당 허브의 HubId 인지 검증 필요
     public CompanyIdResponseDto createCompany(
             CompanyRequestDto requestDto,
             String requestUsername,
             String requestRole) {
 
+        validateRequestRole(requestRole);
+
         UserResponseDto userResponseDto = getUserResponseDto(requestDto.getUsername());
         validateUserRoleIsCompanyManager(userResponseDto.getRole());
 
         GetHubInfoRes getHubInfoRes = getHubInfoResponse(requestDto.getHubId());
-        // 아래 HUB_MANAGER 가 생성 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+        }
 
         Company company = requestDto.toEntity();
         companyRepository.save(company);
@@ -88,6 +90,8 @@ public class CompanyService {
             String requestUsername,
             String requestRole) {
 
+        validateUpdateRequestRole(requestRole);
+
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
 
@@ -101,8 +105,13 @@ public class CompanyService {
         validateUserRoleIsCompanyManager(userResponseDto.getRole());
 
         GetHubInfoRes getHubInfoRes = getHubInfoResponse(requestDto.getHubId());
-        // 아래 HUB_MANAGER 가 수정 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
-        // Company의 hubId를 체크해야 하고, requestDto의 hubId를 체크해야 함
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+
+            getHubInfoRes = getHubInfoResponse(company.getHubId());
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+        }
 
         company.updateCompany(
                 requestDto.getHubId(),
@@ -123,10 +132,14 @@ public class CompanyService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException(CompanyExceptionMessage.COMPANY_NOT_FOUND.getMessage()));
 
+        validateRequestRole(requestRole);
+
         validateDeletedCompany(company);
 
         GetHubInfoRes getHubInfoRes = getHubInfoResponse(company.getHubId());
-        // 아래 HUB_MANAGER 가 삭제 시 요청 HubId가 담당 허브의 HubId 인지 검증하는 메서드 추가
+        if (requestRole.equals("HUB_MANAGER")) {
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+        }
 
         company.updateDeleted(requestUsername);
 
@@ -144,9 +157,27 @@ public class CompanyService {
         return userClientService.getUser(username).getBody();
     }
 
+    private void validateRequestRole(String role) {
+        if (!role.equals("MASTER") && !role.equals("HUB_MANAGER")) {
+            throw new IllegalArgumentException(CompanyExceptionMessage.NOT_COMPANY_MANAGER.getMessage());
+        }
+    }
+
+    private void validateUpdateRequestRole(String role) {
+        if (!role.equals("MASTER") && !role.equals("HUB_MANAGER") && !role.equals("COMPANY_MANAGER")) {
+            throw new IllegalArgumentException(CompanyExceptionMessage.NOT_COMPANY_MANAGER.getMessage());
+        }
+    }
+
     private void validateUserRoleIsCompanyManager(String role) {
         if (!role.equals("COMPANY_MANAGER")) {
             throw new IllegalArgumentException(CompanyExceptionMessage.NOT_COMPANY_MANAGER.getMessage());
+        }
+    }
+
+    private void validateOwnHub(String hubManagerName, String requestUsername) {
+        if (!hubManagerName.equals(requestUsername)) {
+            throw new IllegalArgumentException(CompanyExceptionMessage.NOT_OWN_HUB.getMessage());
         }
     }
 
@@ -182,6 +213,11 @@ public class CompanyService {
         if (throwable instanceof ServiceUnavailable) {
             log.warn("ServiceUnavailableException 발생");
             throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+        }
+
+        if (throwable instanceof IllegalArgumentException) {
+            log.warn("IllegalArgumentException 발생");
+            throw new IllegalArgumentException(throwable.getMessage());
         }
 
         log.warn("기타 예외 발생: {}", String.valueOf(throwable));

@@ -43,9 +43,10 @@ import org.springframework.web.client.RestTemplate;
 @Service
 @RequiredArgsConstructor
 public class HubRouteService {
-  private static final String CENTER_1 = "경기 남부 센터";
-  private static final String CENTER_2 = "대구광역시 센터";
-  private static final String CENTER_3 = "대전광역시 센터";
+
+  private static final String CENTER_GYEONGGI_SOUTH = "경기 남부 센터";
+  private static final String CENTER_DAEGU = "대구광역시 센터";
+  private static final String CENTER_DAEJEON = "대전광역시 센터";
 
   @Value("${kakao.api.key}")
   private String apiKey;
@@ -199,16 +200,16 @@ public class HubRouteService {
 
         return sameCenterHub(startRouteInfo, endRouteInfo, routeInfo);
 
-      } else if (startHub.getHubname().equals("경기 남부 센터")
-          || startHub.getHubname().equals("대구광역시 센터")) {
-        if (endHub.getCenterHub().getHubname().equals("대전광역시 센터")) {
+      } else if (startHub.getHubname().equals(CENTER_GYEONGGI_SOUTH)
+          || startHub.getHubname().equals(CENTER_DAEGU)) {
+        if (endHub.getCenterHub().getHubname().equals(CENTER_DAEJEON)) {
 
           Map<String, Integer> finalRoute = kakaoMapApi(startHub, endHub.getCenterHub());
 
           return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
 
         } else {
-          Hub centerHub = hubRepository.findByHubname("대전광역시 센터");
+          Hub centerHub = hubRepository.findByHubname(CENTER_DAEJEON);
           routeInfo = kakaoMapApi(startHub, centerHub);
           Map<String, Integer> finalRoute = kakaoMapApi(centerHub, endHub.getCenterHub());
 
@@ -217,21 +218,20 @@ public class HubRouteService {
         }
       } else {
         Map<String, Integer> finalRoute = kakaoMapApi(startHub, endHub.getCenterHub());
-        System.out.println("말이되냐고"+finalRoute.get("distance")+endRouteInfo.get("distance"));
         return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
       }
     } else if (endHub.isCenterHub()&& !startHub.isCenterHub()) {
       if (endHub.equals(startHub.getCenterHub())) {
         return sameCenterHub(startRouteInfo, endRouteInfo, routeInfo);
-      } else if (endHub.getHubname().equals(CENTER_1) || endHub.getHubname().equals(CENTER_2)
+      } else if (endHub.getHubname().equals(CENTER_GYEONGGI_SOUTH) || endHub.getHubname().equals(CENTER_DAEGU)
       ) {
-        if (startHub.getCenterHub().getHubname().equals(CENTER_3)) {
+        if (startHub.getCenterHub().getHubname().equals(CENTER_DAEJEON)) {
 
           Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(), endHub);
 
           return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
         } else {
-          Hub centerHub = hubRepository.findByHubname(CENTER_3);
+          Hub centerHub = hubRepository.findByHubname(CENTER_DAEJEON);
           routeInfo = kakaoMapApi(startHub.getCenterHub(), centerHub);
           Map<String, Integer> finalRoute = kakaoMapApi(centerHub, endHub);
 
@@ -247,17 +247,17 @@ public class HubRouteService {
       if (startHub.getCenterHub().equals(endHub.getCenterHub())) {
         return sameCenterHub(startRouteInfo, endRouteInfo, routeInfo);
 
-      } else if (startHub.getCenterHub().getHubname().equals(CENTER_1)
-          || startHub.getCenterHub().getHubname().equals(CENTER_2)) {
+      } else if (startHub.getCenterHub().getHubname().equals(CENTER_GYEONGGI_SOUTH)
+          || startHub.getCenterHub().getHubname().equals(CENTER_DAEGU)) {
 
-        if (endHub.getCenterHub().getHubname().equals(CENTER_3)) {
+        if (endHub.getCenterHub().getHubname().equals(CENTER_DAEJEON)){
 
           Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(),
               endHub.getCenterHub());
           return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
 
         } else {
-          Hub centerHub = hubRepository.findByHubname(CENTER_3);
+          Hub centerHub = hubRepository.findByHubname(CENTER_DAEJEON);
           routeInfo = kakaoMapApi(startHub.getCenterHub(), centerHub);
           Map<String, Integer> finalRoute = kakaoMapApi(centerHub, endHub.getCenterHub());
 

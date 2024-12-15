@@ -16,11 +16,12 @@ public class GetHubInfoRes implements Serializable {
   private String address;
   private double lati;
   private double longti;
+  private String username;
   @JsonProperty("centerHub")
   private boolean isCenterHub;
 
   @Builder
-  public GetHubInfoRes(UUID hubId, String hubName, String address, double lati, double longti, boolean isCenterHub) {
+  public GetHubInfoRes(UUID hubId, String hubName, String address, double lati, double longti, boolean isCenterHub,String username) {
     this.hubId = hubId;
     this.hubName = hubName;
     this.address = address;

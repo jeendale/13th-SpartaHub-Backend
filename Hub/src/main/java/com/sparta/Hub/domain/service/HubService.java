@@ -76,6 +76,7 @@ public class HubService {
             .lati(hub.getLati())
             .longti(hub.getLongti())
             .isCenterHub(hub.isCenterHub())
+            .username(hub.getUsername())
             .build();
     }
 

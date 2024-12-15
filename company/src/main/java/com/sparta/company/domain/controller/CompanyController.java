@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +56,7 @@ public class CompanyController {
             @RequestParam(required = false) String companyName,
             @RequestParam(required = false) CompanyType companyType,
             @RequestParam(required = false) UUID hubId,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt") Pageable pageable) {
 
         Page<CompanyResponseDto> responseDtos = companyService.getCompanies(companyName, companyType,hubId, pageable);
 

@@ -1,5 +1,7 @@
 package com.sparta.shipment.model.entity;
 
+import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
+
 public enum ShipmentStatusEnum {
 
     PENDING_HUB_MOVE,  // 허브 이동 대기중
@@ -14,6 +16,6 @@ public enum ShipmentStatusEnum {
                 return shipmentStatus;
             }
         }
-        throw new IllegalArgumentException("Invalid ShipmentStatus: " + status);
+        throw new IllegalArgumentException(ShipmentCommonExceptionMessage.NOT_ALLOWED_STATUS.getMessage());
     }
 }

@@ -35,19 +35,32 @@ public class ShipmentManager extends Audit {
     @Column(name = "manager_type", nullable = false)
     private ManagerTypeEnum managerType;
 
+    @Column(name = "is_shipping", nullable = false)
+    private Boolean isShipping;
+
     @Column(name = "shipment_seq", nullable = false)
     private int shipmentSeq;
 
 
     public static ShipmentManager create(UUID shipmentManagerId, String username, UUID inHubId, String managerType,
-                                         int shipmentSeq) {
+                                         Boolean isShipping, int shipmentSeq) {
         return ShipmentManager.builder()
                 .shipmentManagerId(shipmentManagerId)
                 .username(username)
                 .inHubId(inHubId)
                 .managerType(ManagerTypeEnum.fromString(managerType))
+                .isShipping(isShipping)
                 .shipmentSeq(shipmentSeq)
                 .build();
     }
+
+    public void changeShippingStatus(Boolean isShipping) {
+        this.isShipping = isShipping;
+    }
+
+    public void changeInHub(UUID inHubId) {
+        this.inHubId = inHubId;
+    }
+
 
 }

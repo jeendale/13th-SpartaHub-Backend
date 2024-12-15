@@ -1,15 +1,16 @@
 package com.sparta.shipment.domain.controller;
 
-import com.sparta.shipment.domain.dto.ShipmentManagerSearchDto;
 import com.sparta.shipment.domain.dto.request.CreateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
 import com.sparta.shipment.domain.service.ShipmentManagerService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -53,6 +55,7 @@ public class ShipmentManagerController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
+    //배송 담당자 수정 API
     @PatchMapping("/{shipmentManagerId}")
     public ResponseEntity<ShipmentManagerResponseDto> updateShipmentManager(@PathVariable UUID shipmentManagerId,
                                                                             @RequestBody UpdateShipmentManagerRequestDto request,
@@ -63,6 +66,7 @@ public class ShipmentManagerController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
+    //배송 담당자 단건 조회 API
     @GetMapping("/{shipmentManagerId}")
     public ResponseEntity<GetShipmentManagerResponseDto> getShipmentManagerById(@PathVariable UUID shipmentManagerId,
                                                                                 @RequestHeader("X-User-Username") String requestUsername,
@@ -72,15 +76,29 @@ public class ShipmentManagerController {
         return ResponseEntity.status(HttpStatus.OK).body((response));
     }
 
+    //배송 담당자 다건 조회 API
     @GetMapping
     public ResponseEntity<PagedModel<GetShipmentManagerResponseDto>> getShipmentManagers(
-            ShipmentManagerSearchDto searchDto,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String managerType,
+            @RequestParam(required = false) UUID hubId,
             Pageable pageable,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
-        Page<GetShipmentManagerResponseDto> response = shipmentManagerService.getShipmentManagers(searchDto,
-                pageable, requestUsername, requestRole);
+
+        Pageable adjustedPageable = adjustPageSize(pageable, List.of(10, 30, 50), 10);
+
+        Page<GetShipmentManagerResponseDto> response = shipmentManagerService.getShipmentManagers(username, managerType,
+                hubId,
+                adjustedPageable, requestUsername, requestRole);
 
         return ResponseEntity.status(HttpStatus.OK).body((new PagedModel<>(response)));
+    }
+
+    private Pageable adjustPageSize(Pageable pageable, List<Integer> allowSizes, int defaultSize) {
+        if (!allowSizes.contains(pageable.getPageSize())) {
+            return PageRequest.of(pageable.getPageNumber(), defaultSize, pageable.getSort());
+        }
+        return pageable;
     }
 }

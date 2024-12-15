@@ -6,11 +6,13 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ShipmentManagerExceptionMessage {
-    NOT_ALLOWED_ROLE("배송 담당자 권한이 아닙니다."),
-    NOT_ALLOWED_API("접근 권한이 없습니다."),
-    NOT_FOUND_DELETE("해당하는 ShipmentManagerId에 삭제 가능한 값이 없습니다."),
-    NOT_MY_INFO("해당 ShipmentManagerId는 본인의 Id가 아닙니다."),
-    NOT_ALLOWED_NULL("은(는) 필수 입력 값입니다.");
+    NOT_FOUND_ACTIVE("해당하는 ShipmentManagerId로 유효한 값이 없습니다."),
+    NOT_MY_INFO("해당 ShipmentManagerId는 본인이 아닙니다."),
+    NOT_COMP_SHIPMENT("업체 배송 담당자가 아닙니다."),
+    NOT_HUB_SHIPMENT("허브 배송 담당자가 아닙니다."),
+    REQUIRE_MANAGER_ID("SHIPMENT_MANAGER는 shipmentManagerId 값을 반드시 입력해야 합니다."),
+    REQUIRE_HUB_ID("HUB_MANAGER는 hubId 값을 반드시 입력해야 합니다."),
+    NOT_IN_HUB("배송 담당자의 담당 허브가 아닙니다.");
 
     private final String message;
 }

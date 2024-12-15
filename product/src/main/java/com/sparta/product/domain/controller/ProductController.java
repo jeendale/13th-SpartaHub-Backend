@@ -9,6 +9,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +60,7 @@ public class ProductController {
             @RequestParam(required = false) UUID companyId,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt") Pageable pageable) {
 
         Page<ProductResponseDto> responseDtos = productService.getProducts(
                 productName, hubId, companyId, requestUsername, requestRole, pageable);

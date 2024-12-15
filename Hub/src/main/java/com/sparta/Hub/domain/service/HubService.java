@@ -51,7 +51,6 @@ public class HubService {
                 .address(createHubReq.getAddress())
                 .lati(createHubReq.getLati())
                 .longti(createHubReq.getLongti())
-                .isCenterHub(createHubReq.isCenterHub())
                 .username(userResponseDto.getUsername())
                 .build();
 
@@ -75,7 +74,6 @@ public class HubService {
             .address(hub.getAddress())
             .lati(hub.getLati())
             .longti(hub.getLongti())
-            .isCenterHub(hub.isCenterHub())
             .username(hub.getUsername())
             .build();
     }
@@ -152,11 +150,6 @@ public class HubService {
             validateUserRoleIsHubManager(userResponseDto.getRole());
 
             hub.updateHubManger(updateHubReq.getUsername());
-        }
-        if(hub.isCenterHub()) {
-            if(!updateHubReq.isCenterHub()) {
-                hub.updateIsCenterHub(false);
-            }
         }
         return hub;
     }

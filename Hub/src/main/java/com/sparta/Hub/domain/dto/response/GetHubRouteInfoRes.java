@@ -13,13 +13,17 @@ import lombok.NoArgsConstructor;
 @Builder
 public class GetHubRouteInfoRes implements Serializable {
   private UUID hubRouteId;
+  private UUID startHubId;
+  private UUID endHubId;
   private String startHubName;
   private String endHubName;
   private BigDecimal distance;
   private BigDecimal deliveryTime;
 
-  public GetHubRouteInfoRes(UUID hubRouteId,String startHubName,String endHubName, BigDecimal distance, BigDecimal deliveryTime) {
+  public GetHubRouteInfoRes(UUID hubRouteId,UUID startHubId,UUID endHubId,String startHubName,String endHubName, BigDecimal distance, BigDecimal deliveryTime) {
     this.hubRouteId = hubRouteId;
+    this.startHubId = startHubId;
+    this.endHubId = endHubId;
     this.startHubName = startHubName;
     this.endHubName = endHubName;
     this.distance = distance;

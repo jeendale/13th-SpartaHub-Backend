@@ -31,23 +31,14 @@ public class Hub extends Audit{
     @Column(nullable = false)
     private String address;
     @Column(nullable = false)
-    private boolean isCenterHub;
-    @Column(nullable = false)
     private String username;
 
-    @ManyToOne
-    @JoinColumn(name="center_hub_id",referencedColumnName = "hubId")
-    private Hub centerHub;
 
-    @OneToMany(mappedBy = "centerHub")
-    private List<Hub> hubs;
-
-    public Hub(String hubname, double lati, double longti, String address, boolean isCenterHub) {
+    public Hub(String hubname, double lati, double longti, String address) {
         this.hubname = hubname;
         this.lati = lati;
         this.longti = longti;
         this.address = address;
-        this.isCenterHub = isCenterHub;
     }
 
     public void updateHubname(String hubname) {
@@ -58,10 +49,6 @@ public class Hub extends Audit{
         this.address = adress;
         this.lati = lati;
         this.longti = longti;
-    }
-
-    public void updateIsCenterHub(boolean b) {
-        this.isCenterHub = b;
     }
 
     public void updateHubManger(String username) {

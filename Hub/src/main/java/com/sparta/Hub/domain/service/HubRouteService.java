@@ -85,6 +85,8 @@ public class HubRouteService {
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
     return GetHubRouteInfoRes.builder()
         .hubRouteId(hubRoute.getHubId())
+        .startHubId(hubRoute.getStartHub().getHubId())
+        .endHubId(hubRoute.getEndHub().getHubId())
         .startHubName(hubRoute.getStartHubName())
         .endHubName(hubRoute.getEndHubName())
         .distance(hubRoute.getDistance())

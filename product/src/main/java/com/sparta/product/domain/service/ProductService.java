@@ -1,7 +1,9 @@
 package com.sparta.product.domain.service;
 
 import com.sparta.product.domain.dto.request.ProductRequestDto;
+import com.sparta.product.domain.dto.request.UpdateProductRequestDto;
 import com.sparta.product.domain.dto.response.ProductIdResponseDto;
+import com.sparta.product.domain.dto.response.ProductResponseDto;
 import com.sparta.product.exception.FeignClientExceptionMessage;
 import com.sparta.product.exception.ProductExceptionMessage;
 import com.sparta.product.exception.ServiceNotAvailableException;
@@ -13,7 +15,6 @@ import feign.FeignException.BadRequest;
 import feign.FeignException.ServiceUnavailable;
 import feign.RetryableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -32,7 +34,7 @@ public class ProductService {
     @Transactional
     @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
     public ProductIdResponseDto createProduct(ProductRequestDto requestDto, String requestUsername, String requestRole) {
-        validateCreateRequestRole(requestRole);
+        validateRequestRole(requestRole);
 
         GetHubInfoRes getHubInfoRes = getHubInfoRes(requestDto.getHubId());
 
@@ -54,6 +56,50 @@ public class ProductService {
                 .build();
     }
 
+    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
+    public ProductResponseDto getProduct(UUID productId, String requestUsername, String requestRole) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            GetHubInfoRes getHubInfoRes = getHubInfoRes(product.getHubId());
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+        }
+
+        return ProductResponseDto.builder()
+                .productId(product.getProductId())
+                .hubId(product.getHubId())
+                .companyId(product.getCompanyId())
+                .productName(product.getProductName())
+                .build();
+    }
+
+    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
+    public ProductIdResponseDto updateProduct(UUID productId, UpdateProductRequestDto requestDto, String requestUsername, String requestRole) {
+        validateRequestRole(requestRole);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+
+        GetHubInfoRes getHubInfoRes = getHubInfoRes(product.getHubId());
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+        }
+
+        CompanyResponseDto companyResponseDto = getCompanyResponseDto(product.getCompanyId());
+
+        if (requestRole.equals("COMPANY_MANAGER")) {
+            validateOwnCompany(companyResponseDto.getUsername(), requestUsername);
+        }
+
+        product.updateProductName(requestDto.getProductName());
+
+        return ProductIdResponseDto.builder()
+                .productId(product.getProductId())
+                .build();
+    }
+
     private GetHubInfoRes getHubInfoRes(UUID requestHubId) {
         return hubClientService.getHub(requestHubId).getBody();
     }
@@ -62,7 +108,7 @@ public class ProductService {
         return companyClientService.getCompany(requestCompanyId).getBody();
     }
 
-    private void validateCreateRequestRole(String requestRole) {
+    private void validateRequestRole(String requestRole) {
         if (!requestRole.equals("HUB_MANAGER") && !requestRole.equals("COMPANY_MANAGER") && !requestRole.equals("MASTER")) {
             throw new IllegalArgumentException(ProductExceptionMessage.NOT_ALLOWED_API.getMessage());
         }

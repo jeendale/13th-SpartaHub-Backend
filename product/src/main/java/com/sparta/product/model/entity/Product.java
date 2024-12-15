@@ -31,4 +31,8 @@ public class Product extends Audit{
 
     @Column(nullable = false)
     private String productName;
+
+    public void updateProductName(String productName) {
+        this.productName = productName;
+    }
 }

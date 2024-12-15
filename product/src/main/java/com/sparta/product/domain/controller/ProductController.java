@@ -1,12 +1,18 @@
 package com.sparta.product.domain.controller;
 
 import com.sparta.product.domain.dto.request.ProductRequestDto;
+import com.sparta.product.domain.dto.request.UpdateProductRequestDto;
 import com.sparta.product.domain.dto.response.ProductIdResponseDto;
+import com.sparta.product.domain.dto.response.ProductResponseDto;
 import com.sparta.product.domain.service.ProductService;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,5 +36,27 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
+    @GetMapping("/{productId}")
+    ResponseEntity<ProductResponseDto> getProduct(
+            @PathVariable UUID productId,
+            @RequestHeader("X-User-Username") String requestUsername,
+            @RequestHeader("X-User-Role") String requestRole) {
 
+        ProductResponseDto responseDto = productService.getProduct(productId, requestUsername, requestRole);
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+    }
+
+    @PutMapping("/{productId}")
+    ResponseEntity<ProductIdResponseDto> updateProduct(
+            @PathVariable UUID productId,
+            @RequestBody UpdateProductRequestDto requestDto,
+            @RequestHeader("X-User-Username") String requestUsername,
+            @RequestHeader("X-User-Role") String requestRole) {
+
+        ProductIdResponseDto responseDto = productService.updateProduct(
+                productId, requestDto, requestUsername, requestRole);
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+    }
 }

@@ -15,4 +15,5 @@ public class GetHubInfoRes {
     private double longti;
     @JsonProperty("centerHub")
     private boolean isCenterHub;
+    private String username;
 }

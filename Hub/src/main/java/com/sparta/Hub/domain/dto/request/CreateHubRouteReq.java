@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class CreateHubRouteReq {
-  private UUID stratHubId;
+  private UUID startHubId;
   private UUID endHubId;
 }

@@ -9,7 +9,7 @@ import lombok.Getter;
 @Builder
 public class GetHubInfoRes {
     private UUID hubId;
-    private String userName;
+    private String username;
     private String hubName;
     private String address;
     private double lati;

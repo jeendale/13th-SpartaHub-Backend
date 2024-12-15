@@ -18,6 +18,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +35,8 @@ public class ProductService {
 
     @Transactional
     @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
-    public ProductIdResponseDto createProduct(ProductRequestDto requestDto, String requestUsername, String requestRole) {
+    public ProductIdResponseDto createProduct(ProductRequestDto requestDto, String requestUsername,
+                                              String requestRole) {
         validateRequestRole(requestRole);
 
         GetHubInfoRes getHubInfoRes = getHubInfoRes(requestDto.getHubId());
@@ -48,6 +51,8 @@ public class ProductService {
             validateOwnCompany(companyResponseDto.getUsername(), requestUsername);
         }
 
+        validateCompanyHubId(companyResponseDto.getHubId(), getHubInfoRes.getHubId());
+
         Product product = requestDto.toEntity();
         productRepository.save(product);
 
@@ -59,7 +64,8 @@ public class ProductService {
     @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
     public ProductResponseDto getProduct(UUID productId, String requestUsername, String requestRole) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+                .orElseThrow(
+                        () -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
 
         validateDeletedProduct(product);
 
@@ -76,13 +82,41 @@ public class ProductService {
                 .build();
     }
 
+    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
+    public Page<ProductResponseDto> getProducts(String productName, UUID hubId, UUID companyId,
+                                                String requestUsername, String requestRole, Pageable pageable) {
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (hubId == null) {
+                throw new IllegalArgumentException(ProductExceptionMessage.REQUIRE_HUB_ID.getMessage());
+            }
+            GetHubInfoRes getHubInfoRes = getHubInfoRes(hubId);
+
+            validateOwnHub(getHubInfoRes.getUsername(), requestUsername);
+
+            if (companyId == null) {
+                return productRepository.searchProducts(productName, hubId, companyId, pageable);
+            }
+
+            CompanyResponseDto companyResponseDto = getCompanyResponseDto(companyId);
+
+            validateCompanyHubId(companyResponseDto.getHubId(), getHubInfoRes.getHubId());
+
+            return productRepository.searchProducts(productName, hubId, companyId, pageable);
+        }
+
+        return productRepository.searchProducts(productName, hubId, companyId, pageable);
+    }
+
     @Transactional
     @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
-    public ProductIdResponseDto updateProduct(UUID productId, UpdateProductRequestDto requestDto, String requestUsername, String requestRole) {
+    public ProductIdResponseDto updateProduct(UUID productId, UpdateProductRequestDto requestDto,
+                                              String requestUsername, String requestRole) {
         validateRequestRole(requestRole);
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+                .orElseThrow(
+                        () -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
 
         validateDeletedProduct(product);
 
@@ -111,7 +145,8 @@ public class ProductService {
         validateDeleteRequestRole(requestRole);
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
+                .orElseThrow(
+                        () -> new IllegalArgumentException(ProductExceptionMessage.PRODUCT_NOT_FOUND.getMessage()));
 
         validateDeletedProduct(product);
 
@@ -136,8 +171,15 @@ public class ProductService {
         return companyClientService.getCompany(requestCompanyId).getBody();
     }
 
+    private void validateCompanyHubId(UUID companyHubID, UUID requestHubId) {
+        if (!companyHubID.equals(requestHubId)) {
+            throw new IllegalArgumentException(ProductExceptionMessage.NOT_COMPANY_HUB.getMessage());
+        }
+    }
+
     private void validateRequestRole(String requestRole) {
-        if (!requestRole.equals("HUB_MANAGER") && !requestRole.equals("COMPANY_MANAGER") && !requestRole.equals("MASTER")) {
+        if (!requestRole.equals("HUB_MANAGER") && !requestRole.equals("COMPANY_MANAGER") && !requestRole.equals(
+                "MASTER")) {
             throw new IllegalArgumentException(ProductExceptionMessage.NOT_ALLOWED_API.getMessage());
         }
     }

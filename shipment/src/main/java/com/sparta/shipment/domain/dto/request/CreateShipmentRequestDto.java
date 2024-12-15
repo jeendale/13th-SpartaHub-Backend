@@ -15,22 +15,16 @@ public class CreateShipmentRequestDto {
     private UUID orderId;
 
     @NotNull
-    private UUID shipmentManagerId;
-
-    @NotNull
     private UUID startHubId;
 
     @NotNull
     private UUID endHubId;
 
     @NotNull
-    private String shipmentStatus;
-
-    @NotNull
     private String shippingAddress;
 
     @NotNull
-    private String receivername;
+    private String receiverName;
 
     @NotNull
     private String receiverSlackId;

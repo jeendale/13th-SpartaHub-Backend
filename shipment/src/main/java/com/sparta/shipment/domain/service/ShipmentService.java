@@ -1,49 +1,119 @@
 package com.sparta.shipment.domain.service;
 
 import com.sparta.shipment.domain.dto.request.CreateShipmentRequestDto;
+import com.sparta.shipment.domain.dto.request.CreateShipmentRouteRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentRequestDto;
+import com.sparta.shipment.domain.dto.response.GetShipmentResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentResponseDto;
+import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
+import com.sparta.shipment.exception.FeignClientExceptionMessage;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
+import com.sparta.shipment.infrastructure.dto.GetHubInfoRes;
+import com.sparta.shipment.infrastructure.dto.GetHubRouteInfoRes;
+import com.sparta.shipment.model.entity.ManagerTypeEnum;
 import com.sparta.shipment.model.entity.Shipment;
 import com.sparta.shipment.model.entity.ShipmentManager;
+import com.sparta.shipment.model.entity.ShipmentStatusEnum;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;
 import com.sparta.shipment.model.repository.ShipmentRepository;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
     private final ShipmentManagerRepository shipmentManagerRepository;
+    private final HubClientService hubClientService;
+    private final ShipmentRouteService shipmentRouteService;
 
     @Transactional
     public ShipmentResponseDto createShipment(CreateShipmentRequestDto request, String requestUsername,
                                               String requestRole) {
 
         validateCreateRole(requestRole);
+        /*
+        List<GetHubInfoRes> getHubInfoRes = Optional.ofNullable(hubClientService.getAllHubs())
+                .filter(hubs -> !hubs.isEmpty())  // 리스트가 비어 있지 않은지 체크
+                .orElseThrow(
+                        () -> new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage()));
+
+        // 요청의 startHubId와 endHubId 값이 리스트에 존재하는지 확인
+        boolean containsStartHubId = getHubInfoRes.stream()
+                .anyMatch(hub -> hub.getHubId().equals(request.getStartHubId()));
+
+        if (!containsStartHubId) {
+            throw new IllegalArgumentException("StartHubId가 " + FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
+        }
+
+        boolean containsEndHubId = getHubInfoRes.stream()
+                .anyMatch(hub -> hub.getHubId().equals(request.getEndHubId()));
+
+        if (!containsEndHubId) {
+            throw new IllegalArgumentException("EndHubId가 " + FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
+        }
+
+         */
+
+        ShipmentManager shipmentManager = findActiveByShipmentManagerId(request.getEndHubId());
 
         UUID shipmentId = UUID.randomUUID();
         while (shipmentRepository.existsById(shipmentId)) {
             shipmentId = UUID.randomUUID();
         }
-
-        ShipmentManager shipmentManager = findActiveByShipmentManagerId(request.getShipmentManagerId());
-
         Shipment shipment = Shipment.create(shipmentId, request.getOrderId(),
                 shipmentManager,
                 request.getStartHubId(),
                 request.getEndHubId(),
-                request.getShipmentStatus(),
+                "PENDING_HUB_MOVE",
                 request.getShippingAddress(),
-                request.getReceivername(),
+                request.getReceiverName(),
                 request.getReceiverSlackId());
+
         shipmentRepository.save(shipment);
+
+        /*데이터 생성해서 해보기
+        GetHubRouteInfoRes info = new GetHubRouteInfoRes(
+                UUID.fromString("123495c6-ae55-4bd9-96e9-266311af02be"),  // hubRouteId (UUID)
+                UUID.fromString("02924f0d-13f2-44f1-9f85-a52c42fc1232"),  // hubRouteId (UUID)
+                UUID.fromString("579395c6-ae55-4bd9-96e9-266311af02be"),  // endHubId (UUID
+                BigDecimal.valueOf(123.40),
+                BigDecimal.valueOf(12)                                   // distance (BigDecimal)
+
+        );
+
+         */
+
+        Page<GetHubRouteInfoRes> infoRes = hubClientService.getHubRoutesByHubIds(
+                request.getStartHubId(), request.getEndHubId(), Pageable.unpaged());
+
+        List<GetHubRouteInfoRes> info = infoRes.getContent();
+
+        // 리스트가 비어있지 않으면 첫 번째 값을 가져오기
+        GetHubRouteInfoRes getHubRouteInfoRes = info.stream()
+                .findFirst() // 비어있는 경우 Optional.empty()를 반환
+                .orElseThrow(
+                        () -> new NoSuchElementException(FeignClientExceptionMessage.HUB_ROUTE_NOT_FOUND.getMessage()));
+
+        //TODO : getHubRouteInfoRes 값으로 찾아오기
+        CreateShipmentRouteRequestDto requestDto = new CreateShipmentRouteRequestDto(shipmentId, 1,
+                request.getStartHubId(), request.getEndHubId(), getHubRouteInfoRes.getDistance(),
+                getHubRouteInfoRes.getDeliveryTime(), null, null,
+                "PENDING_HUB_MOVE");
+        ShipmentRouteResponseDto shipmentRoutes = shipmentRouteService.createShipmentRoute(requestDto, requestUsername,
+                requestRole);
 
         return ShipmentResponseDto.of(shipment);
 
@@ -57,23 +127,30 @@ public class ShipmentService {
 
         Shipment shipment = findActiveByShipmentId(shipmentId);
 
-        Shipment updatedShipment = Shipment.create(
-                shipment.getShipmentId(),
-                shipment.getOrderId(),
-                shipment.getShipmentManager(),
-                shipment.getStartHubId(),
-                shipment.getEndHubId(),
-                request.getShipmentStatus() != null ? request.getShipmentStatus()
-                        : shipment.getShipmentStatus().toString(), // 변경 가능
-                shipment.getShippingAddress(),
-                shipment.getReceivername(),
-                request.getReceiverSlackId() != null ? request.getReceiverSlackId() : shipment.getReceiverSlackId()
+        validateHub(shipment.getStartHubId(), requestUsername, requestRole);
 
-        );
+        if (requestRole.equals("SHIPMENT_MANAGER")) {
+            if (!shipment.getShipmentManager().getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(ShipmentExceptionMessage.NOT_MY_INFO.getMessage());
+            }
 
-        shipmentRepository.save(updatedShipment);
+        }
 
-        return ShipmentResponseDto.of(updatedShipment);
+        if (request.getShipmentStatus() != null) {
+            shipment.updateShipmentStatus(ShipmentStatusEnum.valueOf(request.getShipmentStatus()));
+        }
+        if (request.getReceiverSlackId() != null) {
+            shipment.updateReceiverSlackId(request.getReceiverSlackId());
+        }
+
+        if (request.getShipmentStatus() != null && request.getShipmentStatus().equals("COMPLETED")) {
+            shipment.getShipmentManager().changeShippingStatus(false);
+            shipment.getShipmentRoute().updateShipmentStatus(ShipmentStatusEnum.COMPLETED);
+        }
+
+        shipmentRepository.save(shipment);
+
+        return ShipmentResponseDto.of(shipment);
     }
 
     @Transactional
@@ -82,12 +159,62 @@ public class ShipmentService {
         validateDeleteRole(requestRole);
 
         Shipment shipment = findActiveByShipmentId(shipmentId);
+        validateHub(shipment.getStartHubId(), requestUsername, requestRole);
 
         shipment.updateDeleted(requestUsername);
 
         return ShipmentResponseDto.of(shipment);
     }
 
+    @Transactional
+    public GetShipmentResponseDto getShipmentById(UUID shipmentId, String requestUsername,
+                                                  String requestRole) {
+
+        validateRURole(requestRole);
+
+        Shipment shipment = findActiveByShipmentId(shipmentId);
+
+        if (requestRole.equals("SHIPMENT_MANAGER")) {
+            if (!shipment.getShipmentManager().getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(ShipmentExceptionMessage.NOT_MY_INFO.getMessage());
+            }
+
+        }
+        return GetShipmentResponseDto.of(shipment);
+    }
+
+    @Transactional
+    public Page<GetShipmentResponseDto> getShipments(String shipmentStatus, String receiverName,
+                                                     String shippingAddress, UUID hubId, UUID shipmentManagerId,
+                                                     Pageable pageable, String requestUsername,
+                                                     String requestRole) {
+        validateRURole(requestRole);
+        //TODO : 담당허브만 조회되도록 구현
+
+        if (requestRole.equals("SHIPMENT_MANAGER")) {
+            if (shipmentManagerId == null) {
+                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.REQUIRE_MANAGER_ID.getMessage());
+            }
+            ShipmentManager shipmentManager = shipmentManagerRepository
+                    .findByShipmentManagerIdAndDeletedFalse(shipmentManagerId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
+
+            if (!shipmentManager.getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.NOT_MY_INFO.getMessage());
+            }
+        }
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (hubId == null) {
+                throw new IllegalArgumentException(ShipmentManagerExceptionMessage.REQUIRE_HUB_ID.getMessage());
+            }
+            validateHub(hubId, requestUsername, requestRole);
+        }
+
+        return shipmentRepository.searchShipments(shipmentStatus, receiverName, shippingAddress,
+                hubId, shipmentManagerId, pageable);
+    }
 
     // create 요청이 가능한 권한인지 검증하는 메서드
     private void validateCreateRole(String requestRole) {
@@ -125,17 +252,25 @@ public class ShipmentService {
                         ShipmentExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
     }
 
-    private ShipmentManager findActiveByShipmentManagerId(UUID shipmentManagerId) {
+    private ShipmentManager findActiveByShipmentManagerId(UUID inHubId) {
 
-        ShipmentManager shipmentManager = shipmentManagerRepository.findById(shipmentManagerId)
+        return shipmentManagerRepository.findFirstByInHubIdAndIsShippingFalseAndManagerTypeAndDeletedFalseOrderByShipmentSeqAsc(
+                        inHubId, ManagerTypeEnum.COMP_SHIPMENT)
                 .orElseThrow(() -> new IllegalArgumentException(
                         ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage()));
+    }
 
-        if (shipmentManager.isDeleted()) {
-            throw new IllegalArgumentException(
-                    ShipmentManagerExceptionMessage.NOT_FOUND_ACTIVE.getMessage());
+    private void validateHub(UUID hubId, String requestUsername, String requestRole) {
+        log.info("Hub request for hubId: {}", hubId);
+
+        GetHubInfoRes getHubInfoRes = Optional.ofNullable(hubClientService.getHub(hubId)).orElseThrow(
+                () -> new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage()));
+
+        if (requestRole.equals("HUB_MANAGER")) {
+            if (!getHubInfoRes.getUsername().equals(requestUsername)) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.NOT_VALID_ROLE_HUB.getMessage());
+            }
         }
 
-        return shipmentManager;
     }
 }

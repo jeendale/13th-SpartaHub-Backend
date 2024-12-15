@@ -5,7 +5,6 @@ import com.sparta.shipment.domain.dto.request.CreateShipmentRouteRequestDto;
 import com.sparta.shipment.domain.dto.request.UpdateShipmentRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentResponseDto;
-import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
 import com.sparta.shipment.exception.FeignClientExceptionMessage;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentExceptionMessage;
@@ -72,12 +71,11 @@ public class ShipmentService {
                 .orElseThrow(
                         () -> new NoSuchElementException(FeignClientExceptionMessage.HUB_ROUTE_NOT_FOUND.getMessage()));
 
-        //TODO : getHubRouteInfoRes 값으로 찾아오기
         CreateShipmentRouteRequestDto requestDto = new CreateShipmentRouteRequestDto(shipmentId, 1,
                 request.getStartHubId(), request.getEndHubId(), getHubRouteInfoRes.getDistance(),
                 getHubRouteInfoRes.getDeliveryTime(), null, null,
                 "PENDING_HUB_MOVE");
-        ShipmentRouteResponseDto shipmentRoutes = shipmentRouteService.createShipmentRoute(requestDto, requestRole);
+        shipmentRouteService.createShipmentRoute(requestDto, requestRole);
 
         return ShipmentResponseDto.of(shipment);
 

@@ -9,6 +9,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +55,7 @@ public class AiController {
     public ResponseEntity<PagedModel<AiMessageResponseDto>> searchAiMessages(
             @RequestParam(required = false) String username,
             @RequestHeader("X-User-Role") String requestRole,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt") Pageable pageable) {
 
         Page<AiMessageResponseDto> responseDtos = aiService.searchAiMessages(username, requestRole, pageable);
 

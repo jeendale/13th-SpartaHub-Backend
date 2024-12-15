@@ -50,7 +50,6 @@ public class HubCustomRepositoryImpl implements HubCustomRepository {
             .address(h.getAddress())
             .lati(h.getLati())
             .longti(h.getLongti())
-            .isCenterHub(h.isCenterHub())
             .build())
         .collect(Collectors.toList());
 

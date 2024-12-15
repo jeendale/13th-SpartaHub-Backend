@@ -51,7 +51,6 @@ public class HubService {
                 .address(createHubReq.getAddress())
                 .lati(createHubReq.getLati())
                 .longti(createHubReq.getLongti())
-                .isCenterHub(createHubReq.isCenterHub())
                 .username(userResponseDto.getUsername())
                 .build();
 
@@ -75,7 +74,6 @@ public class HubService {
             .address(hub.getAddress())
             .lati(hub.getLati())
             .longti(hub.getLongti())
-            .isCenterHub(hub.isCenterHub())
             .username(hub.getUsername())
             .build();
     }
@@ -153,11 +151,6 @@ public class HubService {
 
             hub.updateHubManger(updateHubReq.getUsername());
         }
-        if(hub.isCenterHub()) {
-            if(!updateHubReq.isCenterHub()) {
-                hub.updateIsCenterHub(false);
-            }
-        }
         return hub;
     }
 
@@ -179,7 +172,14 @@ public class HubService {
             throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
         }
 
+        if (throwable instanceof IllegalArgumentException) {
+            log.warn("IllegalArgumentException 발생");
+            throw new IllegalArgumentException(throwable.getMessage());
+        }
+
         log.warn("기타 예외 발생: {}", String.valueOf(throwable));
         throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+
+
     }
 }

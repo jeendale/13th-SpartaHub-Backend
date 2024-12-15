@@ -24,13 +24,39 @@ spring:
     show-sql: true
   sql:
     init:
-      mode: never #alwqys-> Run할때마다 data.sql 데이터 삽입 never-> data.sql 파일 신경 안씀 (처음 추가한 다음 never 바꿔주세요)
+      mode: always #alwqys-> Run할때마다 data.sql 데이터 삽입 never-> data.sql 파일 신경 안씀 (처음 추가한 다음 never 바꿔주세요)
 
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:19090/eureka/
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 5
+        slowCallRateThreshold: 100
+        slowCallDurationThreshold: 60000
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 20s
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration:
+          seconds: 3
+        ignore-exceptions:
+          - feign.FeignException.BadRequest
+    instances:
+      userAndHubServiceRetry: # Retry 설정 이름
+        base-config: default
+
 
 service:
   jwt:
@@ -42,7 +68,3 @@ server:
 kakao:
   api:
     key: bc810dfa4da1b613f598f9e3e098ecc4
-jackson:
-  date-format: "yyyy-MM-dd'T'HH:mm:ss"
-  serialization:
-    WRITE_DATES_AS_TIMESTAMPS: false

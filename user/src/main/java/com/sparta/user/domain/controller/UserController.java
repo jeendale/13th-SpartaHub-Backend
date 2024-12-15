@@ -31,8 +31,8 @@ public class UserController {
 
     @GetMapping("/{username}")
     public ResponseEntity<UserResponseDto> getUser(
-            @RequestHeader("X-User-Username") String requestUsername,
-            @RequestHeader("X-User-Role") UserRoleEnum requestRole,
+            @RequestHeader(value = "X-User-Username") String requestUsername,
+            @RequestHeader(value = "X-User-Role") UserRoleEnum requestRole,
             @PathVariable String username) {
 
         UserResponseDto responseDto = userService.getUser(requestUsername, requestRole, username);

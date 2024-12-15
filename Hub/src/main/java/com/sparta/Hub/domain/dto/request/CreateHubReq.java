@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateHubReq {
     private String hubname;
-    private String adress;
+    private String address;
     private double lati;
     private double longti;
     private boolean isCenterHub;
+    private String username;
 }

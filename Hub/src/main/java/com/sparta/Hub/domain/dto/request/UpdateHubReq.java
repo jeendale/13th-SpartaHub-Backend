@@ -11,5 +11,6 @@ public class UpdateHubReq {
   private String adress;
   private double lati;
   private double longti;
+  private String username;
   private boolean isCenterHub=false;
 }

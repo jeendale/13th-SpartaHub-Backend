@@ -1,18 +1,13 @@
 package com.sparta.Hub.domain.dto.response;
 
 
+import java.io.Serializable;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
 @Builder
-public class UpdateHubRes {
+public class HubIdRes implements Serializable {
   private UUID hubId;
-
-  public UpdateHubRes(UUID hubId) {
-    this.hubId = hubId;
-  }
 }

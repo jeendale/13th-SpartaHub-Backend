@@ -6,9 +6,11 @@ import com.sparta.shipment.domain.dto.response.GetShipmentRouteResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
 import com.sparta.shipment.domain.service.ShipmentRouteService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -37,8 +39,7 @@ public class ShipmentRouteController {
             @Valid @RequestBody CreateShipmentRouteRequestDto request,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
-        ShipmentRouteResponseDto response = shipmentRouteService.createShipmentRoute(request, requestUsername,
-                requestRole);
+        ShipmentRouteResponseDto response = shipmentRouteService.createShipmentRoute(request, requestRole);
         return ResponseEntity.status(HttpStatus.CREATED).body((response));
     }
 
@@ -80,15 +81,26 @@ public class ShipmentRouteController {
     @GetMapping
     public ResponseEntity<PagedModel<GetShipmentRouteResponseDto>> getShipmentRoutes(
             @RequestParam(required = false) String shipmentStatus,
+            @RequestParam(required = false) UUID hubId,
+            @RequestParam(required = false) UUID shipmentManagerId,
             Pageable pageable,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
 
-        Page<GetShipmentRouteResponseDto> response = shipmentRouteService.getShipmentRoutes(shipmentStatus,
-                pageable, requestUsername, requestRole);
+        Pageable adjustedPageable = adjustPageSize(pageable, List.of(10, 30, 50), 10);
+
+        Page<GetShipmentRouteResponseDto> response = shipmentRouteService.getShipmentRoutes(shipmentStatus, hubId,
+                shipmentManagerId,
+                adjustedPageable, requestUsername, requestRole);
 
         return ResponseEntity.status(HttpStatus.OK).body((new PagedModel<>(response)));
     }
 
+    private Pageable adjustPageSize(Pageable pageable, List<Integer> allowSizes, int defaultSize) {
+        if (!allowSizes.contains(pageable.getPageSize())) {
+            return PageRequest.of(pageable.getPageNumber(), defaultSize, pageable.getSort());
+        }
+        return pageable;
+    }
 
 }

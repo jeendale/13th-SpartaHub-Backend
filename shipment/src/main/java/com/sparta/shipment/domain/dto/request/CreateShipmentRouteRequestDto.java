@@ -16,9 +16,6 @@ public class CreateShipmentRouteRequestDto {
     private UUID shipmentId;
 
     @NotNull
-    private UUID shipmentManagerId;
-
-    @NotNull
     private Integer routeSeq;
 
     @NotNull

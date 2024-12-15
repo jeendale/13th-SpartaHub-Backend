@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
@@ -37,8 +38,8 @@ public class ShipmentRoute extends Audit {
     /**
      * FK - 배송 아이디 (UUID)
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shipment_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "shipment_id", nullable = false, unique = true)
     private Shipment shipment; // Shipment 엔티티와 연결
 
     /**
@@ -115,5 +116,14 @@ public class ShipmentRoute extends Audit {
                 .realTime(realTime)
                 .shipmentStatus(ShipmentStatusEnum.fromString(shipmentStatus))
                 .build();
+    }
+
+    public void updateShipmentStatus(ShipmentStatusEnum shipmentStatus) {
+        this.shipmentStatus = shipmentStatus;
+    }
+
+    public void updateRealInfo(BigDecimal realDistance, BigDecimal realTime) {
+        this.realDistance = realDistance;
+        this.realTime = realTime;
     }
 }

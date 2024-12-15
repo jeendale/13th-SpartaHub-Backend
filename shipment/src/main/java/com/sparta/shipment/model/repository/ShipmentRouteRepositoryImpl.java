@@ -12,6 +12,7 @@ import com.sparta.shipment.model.entity.ShipmentRoute;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +26,8 @@ public class ShipmentRouteRepositoryImpl implements ShipmentRouteRepositoryCusto
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<GetShipmentRouteResponseDto> searchShipmentRoutes(String shipmentStatus,
+    public Page<GetShipmentRouteResponseDto> searchShipmentRoutes(String shipmentStatus, UUID hubId,
+                                                                  UUID shipmentManagerId,
                                                                   Pageable pageable) {
         List<OrderSpecifier<?>> orders = getAllOrderSpecifiers(pageable);
 
@@ -35,6 +37,8 @@ public class ShipmentRouteRepositoryImpl implements ShipmentRouteRepositoryCusto
                 .from(QShipmentRoute.shipmentRoute)
                 .where(
                         shipmentStatusValid(shipmentStatus),
+                        hubIdEq(hubId),
+                        shipmentManagerIdEq(shipmentManagerId),
                         isNotDeleted()
                 )
                 .fetchOne()).orElse(0L);
@@ -45,6 +49,8 @@ public class ShipmentRouteRepositoryImpl implements ShipmentRouteRepositoryCusto
                 .selectFrom(QShipmentRoute.shipmentRoute)
                 .where(
                         shipmentStatusValid(shipmentStatus),
+                        hubIdEq(hubId),
+                        shipmentManagerIdEq(shipmentManagerId),
                         isNotDeleted()
                 )
                 .orderBy(orders.toArray(new OrderSpecifier[0]))
@@ -67,6 +73,14 @@ public class ShipmentRouteRepositoryImpl implements ShipmentRouteRepositoryCusto
             return shipmentRoute.shipmentStatus.stringValue().equalsIgnoreCase(shipmentStatus);
         }
         return null;
+    }
+
+    private BooleanExpression shipmentManagerIdEq(UUID shipmentManagerId) {
+        return shipmentManagerId != null ? shipmentRoute.shipmentManager.shipmentManagerId.eq(shipmentManagerId) : null;
+    }
+
+    private BooleanExpression hubIdEq(UUID hubId) {
+        return hubId != null ? shipmentRoute.startHubId.eq(hubId) : null;
     }
 
     private BooleanExpression isNotDeleted() {

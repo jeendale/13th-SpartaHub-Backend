@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor // 모든 필드를 받는 생성자
 @Builder
 public class KakaoApiRes {
-  private LocalDateTime deliveryTime;
+  private BigDecimal deliveryTime;
   private BigDecimal distance;
 }

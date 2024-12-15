@@ -39,9 +39,10 @@ public class HubService {
     @Transactional
     @Retry(name = "userServiceRetry")
     @CircuitBreaker(name = "hub-service", fallbackMethod = "fallback")
-    public HubIdRes createHub(CreateHubReq createHubReq,String requestName,String requestRole) {
+    public HubIdRes createHub(CreateHubReq createHubReq,String requestRole) {
         //권한 확인
-        validateRole(requestRole);
+       validateRole(requestRole);
+        System.out.println(requestRole);
         UserResponseDto userResponseDto = getUserResponseDto(createHubReq.getUsername());
         validateUserRoleIsHubManager(userResponseDto.getRole());
 
@@ -79,23 +80,22 @@ public class HubService {
             .build();
     }
 
-    @Cacheable(cacheNames = "hubAllCache",key="getMethodName()")
+    @Cacheable(cacheNames = "hubAllCache", key = "getMethodName()")
     public Page<GetHubInfoRes> getAllHubs(String keyword, Pageable pageable) {
-        return hubRepository.searchHubs(keyword,pageable);
+        return hubRepository.searchHubs(keyword, pageable);
     }
 
     @Transactional
     @CachePut(cacheNames = "hubCache",key = "args[0]")
     @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
     @CircuitBreaker(name = "hub-service", fallbackMethod = "fallback")
-    public HubIdRes updateHub(UUID hubId, UpdateHubReq updateHubReq,String requestName,String requestRole) {
+    public HubIdRes updateHub(UUID hubId, UpdateHubReq updateHubReq,String requestRole) {
 
         validateRole(requestRole);
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
             HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
 
-        Hub updateHub=checkUpdate(hub,updateHubReq);
-        hubRepository.save(updateHub);
+        hubRepository.save(checkUpdate(hub,updateHubReq));
 
         return HubIdRes.builder()
             .hubId(hub.getHubId())
@@ -108,12 +108,13 @@ public class HubService {
             @CacheEvict(cacheNames = "hubCache",key="args[0]"),
             @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
     })
-    public DeleteHubRes deleteHub(UUID hubId,String requestName,String requestRole) {
+    public DeleteHubRes deleteHub(UUID hubId,String requestRole,String requestName) {
         validateRole(requestRole);
 
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
             HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
         hub.updateDeleted(requestName);
+
         hubRepository.save(hub);
 
         return  DeleteHubRes.builder()

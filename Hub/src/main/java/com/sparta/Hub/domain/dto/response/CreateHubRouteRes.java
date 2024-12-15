@@ -16,11 +16,11 @@ public class CreateHubRouteRes {
   private UUID endHubId;
   private String startHubName;
   private String endHubName;
-  private LocalDateTime deliveryTime;
+  private BigDecimal deliveryTime;
   private BigDecimal distance;
 
 
-  public CreateHubRouteRes(UUID hubRouteId,UUID startHubId,UUID endHubId,String startHubName,String endHubName, LocalDateTime deliveryTime, BigDecimal distance) {
+  public CreateHubRouteRes(UUID hubRouteId,UUID startHubId,UUID endHubId,String startHubName,String endHubName, BigDecimal deliveryTime, BigDecimal distance) {
     this.hubRouteId = hubRouteId;
     this.startHubId = startHubId;
     this.endHubId = endHubId;

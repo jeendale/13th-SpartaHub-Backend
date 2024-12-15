@@ -34,10 +34,9 @@ public class HubController {
     @PostMapping
     public ResponseEntity<HubIdRes> createHub(
         @RequestBody CreateHubReq createHubReq,
-        @RequestHeader("X-User-Username") String requestUsername,
         @RequestHeader("X-User-Role") String requestRole
         ){
-        HubIdRes hubIdRes = hubService.createHub(createHubReq,requestUsername,requestRole);
+        HubIdRes hubIdRes = hubService.createHub(createHubReq,requestRole);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(hubIdRes);
     }
@@ -58,15 +57,14 @@ public class HubController {
     public ResponseEntity<HubIdRes> updateHub(
         @PathVariable UUID hubId,
         @RequestBody UpdateHubReq updateHubReq,
-        @RequestHeader("X-User-Username") String requestUsername,
         @RequestHeader("X-User-Role") String requestRole){
-        return ResponseEntity.status(HttpStatus.OK).body(hubService.updateHub(hubId,updateHubReq,requestUsername,requestRole));
+        return ResponseEntity.status(HttpStatus.OK).body(hubService.updateHub(hubId,updateHubReq,requestRole));
     }
     @DeleteMapping("/{hubId}")
     public ResponseEntity<DeleteHubRes> deleteHub(
         @PathVariable UUID hubId,
-        @RequestHeader("X-User-Username") String requestUsername,
-        @RequestHeader("X-User-Role") String requestRole){
-        return ResponseEntity.status(HttpStatus.OK).body(hubService.deleteHub(hubId,requestUsername,requestRole));
+        @RequestHeader("X-User-Role") String requestRole,
+        @RequestHeader("X-User-Username") String requestUsername){
+        return ResponseEntity.status(HttpStatus.OK).body(hubService.deleteHub(hubId,requestRole,requestUsername));
     }
 }

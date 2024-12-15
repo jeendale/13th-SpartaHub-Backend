@@ -49,9 +49,18 @@ public class HubRouteController {
   @GetMapping
   public ResponseEntity<PagedModel<GetHubRouteInfoRes>> getAllHubRoutes(
       @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) UUID startHubId,
+      @RequestParam(required = false) UUID endHubId,
       Pageable pageable
   ){
-    Page<GetHubRouteInfoRes> resPage=hubRouteService.getAllHubRoutes(keyword,pageable);
+    Page<GetHubRouteInfoRes> resPage;
+
+    // 조건에 따라 다른 서비스 메서드를 호출
+    if (startHubId != null || endHubId != null) {
+      resPage = hubRouteService.getHubRoutesByHubIds(startHubId, endHubId, pageable);
+    } else {
+      resPage = hubRouteService.getAllHubRoutes(keyword, pageable);
+    }
     return ResponseEntity.status(HttpStatus.OK).body(new PagedModel<>(resPage));
   }
 

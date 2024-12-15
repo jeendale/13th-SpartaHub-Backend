@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateHubRouteRes implements Serializable {
   private UUID hubRouteId;
-  private LocalDateTime deliveryTime;
+  private BigDecimal deliveryTime;
   private BigDecimal distance;
 
-  public UpdateHubRouteRes(UUID hubRouteId, LocalDateTime deliveryTime, BigDecimal distance) {
+  public UpdateHubRouteRes(UUID hubRouteId, BigDecimal deliveryTime, BigDecimal distance) {
     this.hubRouteId = hubRouteId;
     this.deliveryTime = deliveryTime;
     this.distance = distance;

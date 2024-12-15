@@ -16,9 +16,9 @@ public class GetHubRouteInfoRes implements Serializable {
   private String startHubName;
   private String endHubName;
   private BigDecimal distance;
-  private LocalDateTime deliveryTime;
+  private BigDecimal deliveryTime;
 
-  public GetHubRouteInfoRes(UUID hubRouteId,String startHubName,String endHubName, BigDecimal distance, LocalDateTime deliveryTime) {
+  public GetHubRouteInfoRes(UUID hubRouteId,String startHubName,String endHubName, BigDecimal distance, BigDecimal deliveryTime) {
     this.hubRouteId = hubRouteId;
     this.startHubName = startHubName;
     this.endHubName = endHubName;

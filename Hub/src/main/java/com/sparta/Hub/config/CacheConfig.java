@@ -8,6 +8,7 @@ import org.springframework.data.redis.cache.CacheKeyPrefix;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
@@ -26,23 +27,12 @@ public class CacheConfig {
         .entryTtl(Duration.ofSeconds(10))
         .computePrefixWith(CacheKeyPrefix.simple())
         .serializeValuesWith(
-            SerializationPair.fromSerializer(RedisSerializer.json())
-        );
-    RedisCacheConfiguration forDateTimeConfiguration =RedisCacheConfiguration
-        .defaultCacheConfig()
-        .disableCachingNullValues()
-        .entryTtl(Duration.ofSeconds(10))
-        .computePrefixWith(CacheKeyPrefix.simple())
-        .serializeValuesWith(
             SerializationPair.fromSerializer(RedisSerializer.java())
         );
-
 
     return RedisCacheManager
         .builder(redisConnectionFactory)
         .cacheDefaults(configuration)
-        .withCacheConfiguration("hubroutecache",forDateTimeConfiguration)
-        .withCacheConfiguration("hubrouteAllcache",forDateTimeConfiguration)
         .build();
 
   }

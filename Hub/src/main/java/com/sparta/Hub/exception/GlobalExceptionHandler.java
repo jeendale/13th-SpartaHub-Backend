@@ -15,5 +15,17 @@ public class GlobalExceptionHandler {
         HttpStatus.BAD_REQUEST
     );
   }
+  @ExceptionHandler({ServiceNotAvailableException.class})
+  public ResponseEntity<RestApiException> userServiceNotAvailableException(final ServiceNotAvailableException ex) {
 
+
+    RestApiException restApiException = RestApiException.builder()
+        .message(ex.getMessage())
+        .build();
+
+    return new ResponseEntity<>(
+        restApiException,
+        HttpStatus.SERVICE_UNAVAILABLE
+    );
+  }
 }

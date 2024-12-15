@@ -43,9 +43,10 @@ import org.springframework.web.client.RestTemplate;
 @Service
 @RequiredArgsConstructor
 public class HubRouteService {
-  private static final String CENTER_1 = "경기 남부 센터";
-  private static final String CENTER_2 = "대구광역시 센터";
-  private static final String CENTER_3 = "대전광역시 센터";
+
+  private static final String CENTER_GYEONGGI_SOUTH = "경기 남부 센터";
+  private static final String CENTER_DAEGU = "대구광역시 센터";
+  private static final String CENTER_DAEJEON = "대전광역시 센터";
 
   @Value("${kakao.api.key}")
   private String apiKey;
@@ -61,13 +62,10 @@ public class HubRouteService {
     //validateRole(requestRole);
     validateEquealHub(createHubRouteReq);
 
-    Hub startHub = validateHub(createHubRouteReq.getStratHubId());
+    Hub startHub = validateHub(createHubRouteReq.getStartHubId());
     Hub endHub = validateHub(createHubRouteReq.getEndHubId());
 
-    Map<String, Integer> startRouteInfo = moveCenterHub(startHub);
-    Map<String, Integer> endRouteInfo = moveCenterHub(endHub);
-
-    KakaoApiRes kakaoApiRes = finalMoveRoute(startHub, endHub, startRouteInfo, endRouteInfo);
+    KakaoApiRes kakaoApiRes = kakaoMapApi(startHub, endHub);
 
     HubRoute hubRoute = HubRoute.builder()
         .startHub(startHub)
@@ -82,6 +80,8 @@ public class HubRouteService {
 
     return CreateHubRouteRes.builder()
         .hubRouteId(hubRoute.getHubId())
+        .startHubId(startHub.getHubId())
+        .endHubId(endHub.getHubId())
         .startHubName(hubRoute.getStartHubName())
         .endHubName(hubRoute.getEndHubName())
         .deliveryTime(hubRoute.getDeliveryTime())
@@ -107,7 +107,13 @@ public class HubRouteService {
   public Page<GetHubRouteInfoRes> getAllHubRoutes(String keyword, Pageable pageable) {
     return hubRouteRepository.searchHubRoutes(keyword, pageable);
   }
-
+  @Cacheable(cacheNames = "hubrouteAllcache", key = "getMethodName()")
+  public Page<GetHubRouteInfoRes> getHubRoutesByHubIds(
+      UUID startHubId,
+      UUID endHubId,
+      Pageable pageable) {
+    return hubRouteRepository.searchHubRoutesByHubIds(startHubId, endHubId, pageable);
+  }
   @Transactional
   @CachePut(cacheNames = "hubroutecache", key = "args[0]")
   @CacheEvict(cacheNames = "hubrouteAllcache", allEntries = true)
@@ -119,7 +125,7 @@ public class HubRouteService {
   ) {
     //validateRole(requestRole);
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
-    hubRoute.updateCreatedByAndLastModifiedBy(requestUsername);
+
 
     hubRouteRepository.save(checkUpdate(hubRoute, updateHubRouteReq));
 
@@ -158,7 +164,7 @@ public class HubRouteService {
 
 
   private void validateEquealHub(CreateHubRouteReq createHubRouteReq) {
-    if (createHubRouteReq.getStratHubId().equals(createHubRouteReq.getEndHubId())) {
+    if (createHubRouteReq.getStartHubId().equals(createHubRouteReq.getEndHubId())) {
       throw new IllegalArgumentException(HubRouteExceptionMessage.HUB_ROUTE_EQUEAL.getMessage());
     }
   }
@@ -169,158 +175,7 @@ public class HubRouteService {
         HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
   }
 
-  private Map<String, Integer> moveCenterHub(Hub hub) {
-
-    if (hub.isCenterHub()) {
-      Map<String, Integer> routeInfo = new HashMap<>();
-      routeInfo.put("distance", 0);
-      routeInfo.put("deliveryTime", 0);
-      return routeInfo;
-    }else{
-      return kakaoMapApi(hub,hub.getCenterHub());
-    }
-
-  }
-
-  private KakaoApiRes finalMoveRoute(
-      Hub startHub,
-      Hub endHub,
-      Map<String, Integer> startRouteInfo, //중앙허브 이동값
-      Map<String, Integer> endRouteInfo    //중앙허브 이동값
-  ) {
-    Map<String, Integer> routeInfo = new HashMap<>();
-    //중앙허브가 시작,끝 허브인경우
-    if (startHub.isCenterHub() && endHub.isCenterHub()) {
-      routeInfo = kakaoMapApi(startHub, endHub);
-      return changeRouteInfo(routeInfo);
-
-    } else if (startHub.isCenterHub()&&!endHub.isCenterHub()) {
-      if (startHub.equals(endHub.getCenterHub())) {
-
-        return sameCenterHub(startRouteInfo, endRouteInfo, routeInfo);
-
-      } else if (startHub.getHubname().equals("경기 남부 센터")
-          || startHub.getHubname().equals("대구광역시 센터")) {
-        if (endHub.getCenterHub().getHubname().equals("대전광역시 센터")) {
-
-          Map<String, Integer> finalRoute = kakaoMapApi(startHub, endHub.getCenterHub());
-
-          return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
-
-        } else {
-          Hub centerHub = hubRepository.findByHubname("대전광역시 센터");
-          routeInfo = kakaoMapApi(startHub, centerHub);
-          Map<String, Integer> finalRoute = kakaoMapApi(centerHub, endHub.getCenterHub());
-
-          return twoMoveCenterHub(startRouteInfo, endRouteInfo, routeInfo, finalRoute);
-
-        }
-      } else {
-        Map<String, Integer> finalRoute = kakaoMapApi(startHub, endHub.getCenterHub());
-        System.out.println("말이되냐고"+finalRoute.get("distance")+endRouteInfo.get("distance"));
-        return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
-      }
-    } else if (endHub.isCenterHub()&& !startHub.isCenterHub()) {
-      if (endHub.equals(startHub.getCenterHub())) {
-        return sameCenterHub(startRouteInfo, endRouteInfo, routeInfo);
-      } else if (endHub.getHubname().equals(CENTER_1) || endHub.getHubname().equals(CENTER_2)
-      ) {
-        if (startHub.getCenterHub().getHubname().equals(CENTER_3)) {
-
-          Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(), endHub);
-
-          return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
-        } else {
-          Hub centerHub = hubRepository.findByHubname(CENTER_3);
-          routeInfo = kakaoMapApi(startHub.getCenterHub(), centerHub);
-          Map<String, Integer> finalRoute = kakaoMapApi(centerHub, endHub);
-
-          return twoMoveCenterHub(startRouteInfo, endRouteInfo, routeInfo, finalRoute);
-        }
-      } else {
-        Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(), endHub);
-
-        return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
-      }
-
-    } else {
-      if (startHub.getCenterHub().equals(endHub.getCenterHub())) {
-        return sameCenterHub(startRouteInfo, endRouteInfo, routeInfo);
-
-      } else if (startHub.getCenterHub().getHubname().equals(CENTER_1)
-          || startHub.getCenterHub().getHubname().equals(CENTER_2)) {
-
-        if (endHub.getCenterHub().getHubname().equals(CENTER_3)) {
-
-          Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(),
-              endHub.getCenterHub());
-          return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
-
-        } else {
-          Hub centerHub = hubRepository.findByHubname(CENTER_3);
-          routeInfo = kakaoMapApi(startHub.getCenterHub(), centerHub);
-          Map<String, Integer> finalRoute = kakaoMapApi(centerHub, endHub.getCenterHub());
-
-          return twoMoveCenterHub(startRouteInfo, endRouteInfo, routeInfo, finalRoute);
-        }
-
-      } else {
-        Map<String, Integer> finalRoute = kakaoMapApi(startHub.getCenterHub(),
-            endHub.getCenterHub());
-        return oneMoveCenterHub(finalRoute, startRouteInfo, endRouteInfo, routeInfo);
-
-      }
-    }
-  }
-
-  private KakaoApiRes twoMoveCenterHub(
-      Map<String, Integer> startRouteInfo,
-      Map<String, Integer> endRouteInfo,
-      Map<String, Integer> routeInfo,
-      Map<String, Integer> finalRoute) {
-
-    Integer distance = finalRoute.get("distance")
-        + startRouteInfo.get("distance")
-        + endRouteInfo.get("distance")
-        + routeInfo.get("distance");
-    Integer deliveryTime = finalRoute.get("deliveryTime")
-        + endRouteInfo.get("deliveryTime")
-        + startRouteInfo.get("deliveryTime")
-        + routeInfo.get("deliveryTime");
-    routeInfo.put("distance", distance);
-    routeInfo.put("deliveryTime", deliveryTime);
-    return changeRouteInfo(routeInfo);
-
-  }
-
-  private KakaoApiRes oneMoveCenterHub(
-      Map<String, Integer> finalRoute,
-      Map<String, Integer> startRouteInfo,
-      Map<String, Integer> endRouteInfo,
-      Map<String, Integer> routeInfo) {
-    Integer distnace = finalRoute.get("distance")
-        + endRouteInfo.get("distance")
-        + startRouteInfo.get("distance");
-    Integer deliveryTime = finalRoute.get("deliveryTime")
-        + endRouteInfo.get("deliveryTime")
-        + startRouteInfo.get("deliveryTime");
-    routeInfo.put("distance", distnace);
-    routeInfo.put("deliveryTime", deliveryTime);
-    return changeRouteInfo(routeInfo);
-  }
-
-  private KakaoApiRes sameCenterHub(
-      Map<String, Integer> startRouteInfo,
-      Map<String, Integer> endRouteInfo,
-      Map<String, Integer> routeInfo) {
-    routeInfo.put("distance", startRouteInfo.get("distance") + endRouteInfo.get("distance"));
-    routeInfo.put("deliveryTime",
-        startRouteInfo.get("deliveryTime") + endRouteInfo.get("deliveryTime"));
-
-    return changeRouteInfo(routeInfo);
-  }
-
-  private Map<String, Integer> kakaoMapApi(Hub startHub, Hub endHub) {
+  private KakaoApiRes kakaoMapApi(Hub startHub, Hub endHub) {
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(List.of(MediaType.APPLICATION_JSON));
     headers.setContentType(MediaType.APPLICATION_JSON);
@@ -345,27 +200,22 @@ public class HubRouteService {
     Object duration = summary.get("duration");
     Integer meter = (Integer) distance;
     Integer second = (Integer) duration;
-    Map<String, Integer> routeInfo = new HashMap<>();
-    routeInfo.put("distance", meter);
-    routeInfo.put("deliveryTime", second);
 
-    return routeInfo;
+    BigDecimal deliveryTime = new BigDecimal(second)
+        .divide(BigDecimal.valueOf(3600), 2, RoundingMode.HALF_UP);
 
-  }
 
-  private KakaoApiRes changeRouteInfo(Map<String, Integer> routeInfo) {
-    LocalDateTime deliveryTime = LocalDateTime.now()
-        .plus(Duration.ofSeconds(routeInfo.get("deliveryTime")));
-
-    BigDecimal meterBD = new BigDecimal(routeInfo.get("distance"));
+    BigDecimal meterBD = new BigDecimal(meter);
     BigDecimal kilometerBD = meterBD.divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
 
     // 응답 본문에서 필요한 필드만 추출
     return KakaoApiRes.builder()
-        .deliveryTime(deliveryTime)
-        .distance(kilometerBD)
+        .deliveryTime(deliveryTime)  // deliveryTime을 분 단위로 (Decimal(4,2))
+        .distance(kilometerBD)                // 거리 (Decimal(5,2)로 계산)
         .build();
+
   }
+
 
 
   private HubRoute checkUpdate(HubRoute hubRoute, UpdateHubRouteReq updateHubRouteReq) {
@@ -374,18 +224,15 @@ public class HubRouteService {
       Hub endHub = validateHub(updateHubRouteReq.getEndHubId());
       hubRoute.updateEndHubRoute(endHub);
 
-      Map<String, Integer> startRouteInfo = moveCenterHub(hubRoute.getStartHub());
-      Map<String, Integer> endRouteInfo = moveCenterHub(endHub);
+      KakaoApiRes kakaoApiRes=kakaoMapApi(hubRoute.getStartHub(), endHub);
 
-      KakaoApiRes kakaoApiRes = finalMoveRoute(hubRoute.getStartHub(), endHub, startRouteInfo,
-          endRouteInfo);
-
-      hubRoute.updateRoad(kakaoApiRes.getDeliveryTime(), kakaoApiRes.getDistance());
+      hubRoute.updateRoad(kakaoApiRes.getDeliveryTime(), kakaoApiRes.getDistance(),endHub,endHub.getHubname());
       return hubRoute;
     }
     return hubRoute;
 
   }
+
 
 
 }

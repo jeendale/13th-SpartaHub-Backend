@@ -2,11 +2,9 @@ package com.sparta.Hub.domain.service;
 
 import com.sparta.Hub.domain.dto.request.CreateHubReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubReq;
-import com.sparta.Hub.domain.dto.response.CreateHubRes;
 import com.sparta.Hub.domain.dto.response.DeleteHubRes;
 import com.sparta.Hub.domain.dto.response.GetHubInfoRes;
 import com.sparta.Hub.domain.dto.response.HubIdRes;
-import com.sparta.Hub.domain.dto.response.UpdateHubRes;
 import com.sparta.Hub.exception.FeignClientExceptionMessage;
 import com.sparta.Hub.exception.HubExceptionMessage;
 import com.sparta.Hub.exception.ServiceNotAvailableException;
@@ -41,9 +39,10 @@ public class HubService {
     @Transactional
     @Retry(name = "userServiceRetry")
     @CircuitBreaker(name = "hub-service", fallbackMethod = "fallback")
-    public CreateHubRes createHub(CreateHubReq createHubReq,String requestName,String requestRole) {
+    public HubIdRes createHub(CreateHubReq createHubReq,String requestRole) {
         //권한 확인
-        validateRole(requestRole);
+       validateRole(requestRole);
+        System.out.println(requestRole);
         UserResponseDto userResponseDto = getUserResponseDto(createHubReq.getUsername());
         validateUserRoleIsHubManager(userResponseDto.getRole());
 
@@ -53,12 +52,13 @@ public class HubService {
                 .lati(createHubReq.getLati())
                 .longti(createHubReq.getLongti())
                 .isCenterHub(createHubReq.isCenterHub())
+                .username(userResponseDto.getUsername())
                 .build();
 
         hubRepository.save(hub);
 
-        return CreateHubRes.builder()
-                .hubUId(hub.getHubId())
+        return HubIdRes.builder()
+                .hubId(hub.getHubId())
                 .build();
 
     }
@@ -76,29 +76,28 @@ public class HubService {
             .lati(hub.getLati())
             .longti(hub.getLongti())
             .isCenterHub(hub.isCenterHub())
+            .username(hub.getUsername())
             .build();
     }
 
-    @Cacheable(cacheNames = "hubAllCache",key="getMethodName()")
+    @Cacheable(cacheNames = "hubAllCache", key = "getMethodName()")
     public Page<GetHubInfoRes> getAllHubs(String keyword, Pageable pageable) {
-        return hubRepository.searchHubs(keyword,pageable);
+        return hubRepository.searchHubs(keyword, pageable);
     }
 
     @Transactional
     @CachePut(cacheNames = "hubCache",key = "args[0]")
     @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
     @CircuitBreaker(name = "hub-service", fallbackMethod = "fallback")
-    public UpdateHubRes updateHub(UUID hubId, UpdateHubReq updateHubReq,String requestName,String requestRole) {
+    public HubIdRes updateHub(UUID hubId, UpdateHubReq updateHubReq,String requestRole) {
 
         validateRole(requestRole);
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
             HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
 
-        hub.updateCreatedByAndLastModifiedBy(requestName);
-        Hub updateHub=checkUpdate(hub,updateHubReq);
-        hubRepository.save(updateHub);
+        hubRepository.save(checkUpdate(hub,updateHubReq));
 
-        return UpdateHubRes.builder()
+        return HubIdRes.builder()
             .hubId(hub.getHubId())
             .build();
     }
@@ -109,12 +108,13 @@ public class HubService {
             @CacheEvict(cacheNames = "hubCache",key="args[0]"),
             @CacheEvict(cacheNames = "hubAllCache",allEntries = true)
     })
-    public DeleteHubRes deleteHub(UUID hubId,String requestName,String requestRole) {
+    public DeleteHubRes deleteHub(UUID hubId,String requestRole,String requestName) {
         validateRole(requestRole);
 
         Hub hub=hubRepository.findById(hubId).orElseThrow(()-> new IllegalArgumentException(
             HubExceptionMessage.HUB_NOT_EXIST.getMessage()));
         hub.updateDeleted(requestName);
+
         hubRepository.save(hub);
 
         return  DeleteHubRes.builder()

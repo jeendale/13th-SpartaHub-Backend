@@ -27,6 +27,7 @@ public class GetHubInfoRes implements Serializable {
     this.address = address;
     this.lati = lati;
     this.longti = longti;
+    this.username = username;
     this.isCenterHub = isCenterHub;
   }
 }

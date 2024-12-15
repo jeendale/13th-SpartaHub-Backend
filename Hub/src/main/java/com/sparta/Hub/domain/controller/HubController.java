@@ -2,10 +2,9 @@ package com.sparta.Hub.domain.controller;
 
 import com.sparta.Hub.domain.dto.request.CreateHubReq;
 import com.sparta.Hub.domain.dto.request.UpdateHubReq;
-import com.sparta.Hub.domain.dto.response.CreateHubRes;
 import com.sparta.Hub.domain.dto.response.DeleteHubRes;
 import com.sparta.Hub.domain.dto.response.GetHubInfoRes;
-import com.sparta.Hub.domain.dto.response.UpdateHubRes;
+import com.sparta.Hub.domain.dto.response.HubIdRes;
 import com.sparta.Hub.domain.service.HubService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,14 +32,14 @@ public class HubController {
     private final HubService hubService;
 
     @PostMapping
-    public ResponseEntity<CreateHubRes> createHub(
+    public ResponseEntity<HubIdRes> createHub(
         @RequestBody CreateHubReq createHubReq,
         @RequestHeader("X-User-Username") String requestUsername,
         @RequestHeader("X-User-Role") String requestRole
         ){
-        CreateHubRes createHubRes = hubService.createHub(createHubReq,requestUsername,requestRole);
+        HubIdRes hubIdRes = hubService.createHub(createHubReq,requestUsername,requestRole);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(createHubRes);
+        return ResponseEntity.status(HttpStatus.CREATED).body(hubIdRes);
     }
 
     @GetMapping("/{hubId}")
@@ -56,7 +55,7 @@ public class HubController {
         return ResponseEntity.status(HttpStatus.OK).body(new PagedModel<>(resPage));
     }
     @PatchMapping("/{hubId}")
-    public ResponseEntity<UpdateHubRes> updateHub(
+    public ResponseEntity<HubIdRes> updateHub(
         @PathVariable UUID hubId,
         @RequestBody UpdateHubReq updateHubReq,
         @RequestHeader("X-User-Username") String requestUsername,

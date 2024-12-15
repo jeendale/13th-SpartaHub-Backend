@@ -62,7 +62,7 @@ public class HubRouteService {
     //validateRole(requestRole);
     validateEquealHub(createHubRouteReq);
 
-    Hub startHub = validateHub(createHubRouteReq.getStratHubId());
+    Hub startHub = validateHub(createHubRouteReq.getStartHubId());
     Hub endHub = validateHub(createHubRouteReq.getEndHubId());
 
     Map<String, Integer> startRouteInfo = moveCenterHub(startHub);
@@ -83,6 +83,8 @@ public class HubRouteService {
 
     return CreateHubRouteRes.builder()
         .hubRouteId(hubRoute.getHubId())
+        .startHubId(startHub.getHubId())
+        .endHubId(endHub.getHubId())
         .startHubName(hubRoute.getStartHubName())
         .endHubName(hubRoute.getEndHubName())
         .deliveryTime(hubRoute.getDeliveryTime())
@@ -108,7 +110,13 @@ public class HubRouteService {
   public Page<GetHubRouteInfoRes> getAllHubRoutes(String keyword, Pageable pageable) {
     return hubRouteRepository.searchHubRoutes(keyword, pageable);
   }
-
+  @Cacheable(cacheNames = "hubrouteAllcache", key = "getMethodName()")
+  public Page<GetHubRouteInfoRes> getHubRoutesByHubIds(
+      UUID startHubId,
+      UUID endHubId,
+      Pageable pageable) {
+    return hubRouteRepository.searchHubRoutesByHubIds(startHubId, endHubId, pageable);
+  }
   @Transactional
   @CachePut(cacheNames = "hubroutecache", key = "args[0]")
   @CacheEvict(cacheNames = "hubrouteAllcache", allEntries = true)
@@ -120,7 +128,7 @@ public class HubRouteService {
   ) {
     //validateRole(requestRole);
     HubRoute hubRoute = validateExistHubRoute(hubRouteId);
-    hubRoute.updateCreatedByAndLastModifiedBy(requestUsername);
+
 
     hubRouteRepository.save(checkUpdate(hubRoute, updateHubRouteReq));
 
@@ -159,7 +167,7 @@ public class HubRouteService {
 
 
   private void validateEquealHub(CreateHubRouteReq createHubRouteReq) {
-    if (createHubRouteReq.getStratHubId().equals(createHubRouteReq.getEndHubId())) {
+    if (createHubRouteReq.getStartHubId().equals(createHubRouteReq.getEndHubId())) {
       throw new IllegalArgumentException(HubRouteExceptionMessage.HUB_ROUTE_EQUEAL.getMessage());
     }
   }
@@ -386,6 +394,7 @@ public class HubRouteService {
     return hubRoute;
 
   }
+
 
 
 }

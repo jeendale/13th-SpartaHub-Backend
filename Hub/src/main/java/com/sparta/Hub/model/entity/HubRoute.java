@@ -27,10 +27,11 @@ public class HubRoute extends Audit {
   @GeneratedValue(generator = "UUID")
   private UUID hubId;
 
-  @Column(nullable = false)
-  private LocalDateTime deliveryTime;
-  @Column(nullable = false)
+  @Column(nullable = false, precision = 5, scale = 2) // 거리: 최대 999.99
   private BigDecimal distance;
+  @Column(nullable = false, precision = 4, scale = 2) // 시간: 최대 99.99
+  private BigDecimal deliveryTime;
+
   @Column(nullable = false)
   private String startHubName;
   @Column(nullable = false)
@@ -44,7 +45,7 @@ public class HubRoute extends Audit {
   @JoinColumn(name = "end_hub_id", nullable = false)
   private Hub endHub;
 
-  public HubRoute(LocalDateTime deliveryTime, BigDecimal distance, Hub startHub, Hub endHub) {
+  public HubRoute(BigDecimal deliveryTime, BigDecimal distance, Hub startHub, Hub endHub) {
     this.deliveryTime = deliveryTime;
     this.distance = distance;
     this.startHub = startHub;
@@ -55,8 +56,10 @@ public class HubRoute extends Audit {
     this.endHub = endHub;
   }
 
-  public void updateRoad(LocalDateTime deliveryTime, BigDecimal distance) {
+  public void updateRoad(BigDecimal deliveryTime, BigDecimal distance,Hub endHub, String endHubName) {
     this.deliveryTime = deliveryTime;
     this.distance = distance;
+    this.endHub = endHub;
+    this.endHubName = endHubName;
   }
 }

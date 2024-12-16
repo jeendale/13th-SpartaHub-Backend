@@ -31,6 +31,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -228,7 +230,7 @@ public class OrderService {
   }
   private OrderIdRes deleteOredrRes(Order order,String username) {
     ProductResponseDto product =getProductResponseDto(order.getProductId());
-    int beforeOrderQuantity= order.getQuantity();//product count
+    int beforeOrderQuantity= order.getQuantity()+product.getCount();
     UpdateProductRequestDto updateProductRequestDto= UpdateProductRequestDto.builder()
         .productName(null)
         .count(beforeOrderQuantity)
@@ -255,7 +257,15 @@ public class OrderService {
         .orderId(order.getOrderId())
         .build();
   }
-
+  public Page<GetOrderRes> searchOrders(
+      String username,
+      UUID requestCompanyId,
+      UUID receiveCompanyId,
+      UUID productId,
+      UUID shipmentId,
+      Pageable pageable) {
+      return null;
+  }
   private Order validateOrder(UUID orderId) {
     return orderRepository.findById(orderId).orElseThrow(() ->
         new IllegalArgumentException(OrderExceptionMessage.ORDER_NOT_FOUND.getMessage())

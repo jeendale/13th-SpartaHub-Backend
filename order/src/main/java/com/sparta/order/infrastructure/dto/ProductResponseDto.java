@@ -11,4 +11,5 @@ public class ProductResponseDto {
   private UUID hubId;
   private UUID companyId;
   private String productName;
+  private Integer count;
 }

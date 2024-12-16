@@ -28,7 +28,7 @@ public class SwaggerConfig {
                                         .bearerFormat("JWT")
                                         .in(SecurityScheme.In.HEADER)
                                         .name("Authorization")))
-                .info(new Info().title("User Service API")
+                .info(new Info().title("Slack Service API")
                         .version("v0.0.1"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }

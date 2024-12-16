@@ -8,14 +8,12 @@ import lombok.Getter;
 @Getter
 @Builder
 public class ProductRequestDto {
-    private UUID productId;
     private UUID hubId;
     private UUID companyId;
     private String productName;
 
     public Product toEntity() {
         return Product.builder()
-                .productId(productId)
                 .hubId(hubId)
                 .companyId(companyId)
                 .productName(productName)

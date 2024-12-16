@@ -79,6 +79,7 @@ public class ProductService {
                 .hubId(product.getHubId())
                 .companyId(product.getCompanyId())
                 .productName(product.getProductName())
+                .count(product.getCount())
                 .build();
     }
 

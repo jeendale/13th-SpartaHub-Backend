@@ -1,5 +1,6 @@
 package com.sparta.user.domain.controller;
 
+import com.sparta.user.domain.controller.swagger.UserControllerDocs;
 import com.sparta.user.domain.dto.request.UpdateUserRequestDto;
 import com.sparta.user.domain.dto.response.UserResponseDto;
 import com.sparta.user.domain.dto.response.UsernameResponseDto;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/users")
-public class UserController {
+public class UserController implements UserControllerDocs {
 
     private final UserService userService;
 

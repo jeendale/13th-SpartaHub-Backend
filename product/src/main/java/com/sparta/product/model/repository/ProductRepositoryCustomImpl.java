@@ -33,7 +33,8 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
                         product.productId,
                         product.hubId,
                         product.companyId,
-                        product.productName
+                        product.productName,
+                        product.count
                 ))
                 .from(product)
                 .where(

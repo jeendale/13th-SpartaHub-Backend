@@ -132,7 +132,7 @@ public class ProductService {
             validateOwnCompany(companyResponseDto.getUsername(), requestUsername);
         }
 
-        product.updateProductName(requestDto.getProductName());
+        updateProduct(product, requestDto);
 
         return ProductIdResponseDto.builder()
                 .productId(product.getProductId())
@@ -205,6 +205,16 @@ public class ProductService {
     private void validateOwnCompany(String companyUsername, String requestUsername) {
         if (!companyUsername.equals(requestUsername)) {
             throw new IllegalArgumentException(ProductExceptionMessage.NOT_OWN_COMPANY.getMessage());
+        }
+    }
+
+    private void updateProduct(Product product, UpdateProductRequestDto requestDto) {
+        if (requestDto.getProductName() != null) {
+            product.updateProductName(requestDto.getProductName());
+        }
+
+        if (requestDto.getCount() != null) {
+            product.updateCount(requestDto.getCount());
         }
     }
 

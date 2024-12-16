@@ -5,6 +5,7 @@ import com.sparta.product.domain.dto.request.UpdateProductRequestDto;
 import com.sparta.product.domain.dto.response.ProductIdResponseDto;
 import com.sparta.product.domain.dto.response.ProductResponseDto;
 import com.sparta.product.domain.service.ProductService;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,7 +34,7 @@ public class ProductController {
 
     @PostMapping
     ResponseEntity<ProductIdResponseDto> createProduct(
-            @RequestBody ProductRequestDto requestDto,
+            @Valid @RequestBody ProductRequestDto requestDto,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
 
@@ -71,7 +72,7 @@ public class ProductController {
     @PutMapping("/{productId}")
     ResponseEntity<ProductIdResponseDto> updateProduct(
             @PathVariable UUID productId,
-            @RequestBody UpdateProductRequestDto requestDto,
+            @Valid @RequestBody UpdateProductRequestDto requestDto,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
 

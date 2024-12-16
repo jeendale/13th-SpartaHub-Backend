@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = {"com.sparta.product.domain.controller"})
+
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({IllegalArgumentException.class})
@@ -49,10 +50,10 @@ public class GlobalExceptionHandler {
         StringBuilder errorMessages = new StringBuilder();
 
         ex.getBindingResult().getFieldErrors().forEach(error ->
-                        errorMessages.append(error.getField())
-                                .append(" : ")
-                                .append(error.getDefaultMessage())
-                                .append(" ")
+                errorMessages.append(error.getField())
+                        .append(" : ")
+                        .append(error.getDefaultMessage())
+                        .append(" ")
         );
 
         RestApiException restApiException = RestApiException.builder()

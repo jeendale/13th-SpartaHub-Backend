@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = {"com.sparta.slack.domain.controller"})
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({IllegalArgumentException.class})

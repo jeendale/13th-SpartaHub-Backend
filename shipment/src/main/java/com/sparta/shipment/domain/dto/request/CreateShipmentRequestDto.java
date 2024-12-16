@@ -11,11 +11,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateShipmentRequestDto {
 
-  // @NotNull
-    //private UUID orderId; //이게 들어갈 수 있어..?
+    @NotNull
+    private UUID orderId;
 
     @NotNull
-    private UUID startHubId; // 시작허브 끝
+    private UUID startHubId;
 
     @NotNull
     private UUID endHubId;

@@ -28,10 +28,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<RestApiException> handleValidationExceptions(MethodArgumentNotValidException ex) {
+
         log.warn("handleValidationExceptions 발생: {}", ex.getMessage());
 
+        StringBuilder errorMessages = new StringBuilder();
+
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errorMessages.append(error.getField())
+                        .append(" : ")
+                        .append(error.getDefaultMessage())
+                        .append(" ")
+        );
+
         RestApiException restApiException = RestApiException.builder()
-                .errorMessage(ex.getMessage())
+                .errorMessage(errorMessages.toString())
                 .build();
 
         return new ResponseEntity<>(

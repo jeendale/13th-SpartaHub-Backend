@@ -1,4 +1,4 @@
-package com.sparta.Hub.domain.dto.response;
+package com.sparta.order.infrastructure.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
@@ -20,7 +20,7 @@ public class GetHubInfoRes implements Serializable {
 
 
   @Builder
-  public GetHubInfoRes(UUID hubId, String hubName, String address, double lati, double longti, String username) {
+  public GetHubInfoRes(UUID hubId, String hubName, String address, double lati, double longti,String username) {
     this.hubId = hubId;
     this.hubName = hubName;
     this.address = address;

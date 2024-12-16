@@ -52,3 +52,7 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+openapi:
+  service:
+    url: http://localhost:19091/company-service

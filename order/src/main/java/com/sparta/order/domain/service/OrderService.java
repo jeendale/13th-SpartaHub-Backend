@@ -165,6 +165,30 @@ public class OrderService {
     }
 
   }
+  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
+  public OrderIdRes deleteOrder(UUID orderId, String requestRole, String requestUsername) {
+    Order order=validateOrder(orderId);
+    UserResponseDto userResponse= getUserResponseDto(requestUsername);
+    if(requestRole.equals("MASTER")){
+      return  deleteOredrRes(order,userResponse.getUsername());
+    }else if(requestRole.equals("HUB_MANAGER")){
+
+      GetShipmentResponseDto shipment=getShipment(order.getShipmentId());
+      GetHubInfoRes startHub=getHubResponseDto(shipment.getStartHubId());
+      GetHubInfoRes endHub=getHubResponseDto(shipment.getEndHubId());
+
+      if(userResponse.getUsername().equals(startHub.getUsername())||userResponse.getUsername().equals(endHub.getUsername())){
+        return  deleteOredrRes(order,userResponse.getUsername());
+      }
+      throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
+    }else{
+      throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
+    }
+
+  }
+
+
+
 
   private OrderIdRes updateOrder(Order order, UpdateOredrReq updateOredrReq) {
 
@@ -202,7 +226,35 @@ public class OrderService {
         .orderId(order.getOrderId())
         .build();
   }
+  private OrderIdRes deleteOredrRes(Order order,String username) {
+    ProductResponseDto product =getProductResponseDto(order.getProductId());
+    int beforeOrderQuantity= order.getQuantity();//product count
+    UpdateProductRequestDto updateProductRequestDto= UpdateProductRequestDto.builder()
+        .productName(null)
+        .count(beforeOrderQuantity)
+        .build();
+    ProductIdResponseDto productId=updateProductResponseDto(product.getProductId(),updateProductRequestDto);
 
+    String message=
+        "  \"상품 정보\": \"" + product.getProductName() + "\",\n" +
+            "  \"뱐걍시힝\": \" \"삭제되었습니다.\" " ;
+
+    String slackId="C0842TW8FT7";
+    SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
+        SlackRequestDto.builder()
+            .message(message)
+            .recivedSlackId(slackId)
+            .build()
+    ).getBody();
+
+    order.updateProductId(productId.getProductId());
+    order.updateDeleted(username);
+    orderRepository.save(order);
+
+    return OrderIdRes.builder()
+        .orderId(order.getOrderId())
+        .build();
+  }
 
   private Order validateOrder(UUID orderId) {
     return orderRepository.findById(orderId).orElseThrow(() ->
@@ -344,6 +396,7 @@ public class OrderService {
 
 
   }
+
 
 
 }

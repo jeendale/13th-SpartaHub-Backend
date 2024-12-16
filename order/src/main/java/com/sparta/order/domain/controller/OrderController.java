@@ -9,6 +9,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +50,15 @@ public class OrderController {
       @RequestHeader("X-User-Username") String requestUsername
   ){
     return ResponseEntity.status(HttpStatus.OK).body(orderService.updateOrder(orderId,updateOredrReq,requestRole,requestUsername));
+  }
+
+  @DeleteMapping("/{orderId}")
+  public ResponseEntity<OrderIdRes> deleteOrder(
+      @PathVariable UUID orderId,
+      @RequestHeader("X-User-Role") String requestRole,
+      @RequestHeader("X-User-Username") String requestUsername
+  ){
+    return ResponseEntity.status(HttpStatus.OK).body(orderService.deleteOrder(orderId,requestRole,requestUsername));
   }
 
 }

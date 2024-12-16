@@ -72,13 +72,26 @@ public class OrderService {
         startHub.getAddress(),
         endHub.getAddress()
     );
-
+    String slackId="C0842TW8FT7";
     SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
         SlackRequestDto.builder()
             .message(message)
-            .recivedSlackId(userResponseDto.getSlackId())
+            .recivedSlackId(slackId)
             .build()
     ).getBody();
+    UUID orderId = UUID.randomUUID();
+    while (orderRepository.existsById(orderId)) { //베송아이디를 생성...?
+      orderId = UUID.randomUUID();
+    }
+    ShipmentResponseDto shipmentResponse = shipmentClientService.createShipment(
+        CreateShipmentRequestDto.builder()
+            .receiverName(userResponseDto.getUsername())
+            .endHubId(endHub.getHubId())
+            .shippingAddress(endHub.getAddress())
+            .startHubId(startHub.getHubId())
+            .receiverSlackId(userResponseDto.getSlackId())
+            .orderId(orderId)
+            .build()).getBody();
 
     Order oreder =orderRepository.save(Order.builder()
             .orderDate(LocalDateTime.now())
@@ -88,18 +101,12 @@ public class OrderService {
             .requestCompanyId(requestCompany.getCompanyId())
             .receiveCompanyId(receiveCompany.getCompanyId())
             .productId(productResponseDto.getProductId())
+            .shipmentId(shipmentResponse.getShipmentId())
         .build());
+    System.out.println("여기");
 
-    ShipmentResponseDto shipmentId = shipmentClientService.createShipment(
-        CreateShipmentRequestDto.builder()
-            .receiverName(userResponseDto.getUsername())
-            .endHubId(endHub.getHubId())
-            .shippingAddress(endHub.getAddress())
-            .startHubId(startHub.getHubId())
-            .receiverSlackId(userResponseDto.getSlackId())
-            .orderId(oreder.getOrderId())
-            .build()).getBody();
-    oreder.updateShipmentId(shipmentId.getShipmentId());
+    System.out.println(shipmentResponse.getShipmentId());
+
     orderRepository.save(oreder);
 
     return OrderIdRes.builder()
@@ -109,7 +116,7 @@ public class OrderService {
 
 
 
-
+  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
   public GetOrderRes getOrder(UUID orderId, String requestRole, String requestUsername) {
     Order order = validateOrder(orderId);
     UserResponseDto userResponse= getUserResponseDto(requestUsername);

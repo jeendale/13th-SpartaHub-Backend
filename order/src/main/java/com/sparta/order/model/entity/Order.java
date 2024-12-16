@@ -48,7 +48,8 @@ public class Order extends Audit{
       String username,
       UUID requestCompanyId,
       UUID receiveCompanyId,
-      UUID productId
+      UUID productId,
+      UUID shipmentId
 
   ) {
     this.orderDate = orderDate;
@@ -58,10 +59,7 @@ public class Order extends Audit{
     this.requestCompanyId = requestCompanyId;
     this.receiveCompanyId = receiveCompanyId;
     this.productId = productId;
-
-  }
-
-  public void updateShipmentId(UUID shipmentId){
     this.shipmentId = shipmentId;
+
   }
 }

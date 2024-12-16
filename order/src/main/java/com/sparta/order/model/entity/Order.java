@@ -1,5 +1,6 @@
 package com.sparta.order.model.entity;
 
+import com.sparta.order.infrastructure.dto.ProductIdResponseDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -61,5 +62,9 @@ public class Order extends Audit{
     this.productId = productId;
     this.shipmentId = shipmentId;
 
+  }
+
+  public void updateProductId(UUID productId) {
+    this.productId = productId;
   }
 }

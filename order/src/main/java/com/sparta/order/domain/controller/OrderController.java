@@ -30,7 +30,7 @@ public class OrderController {
       @RequestBody CreateOrderReq createOrderReq,
       @RequestHeader("X-User-Username") String requestUsername
       ){
-      return ResponseEntity.status(HttpStatus.OK).body(orderService.createOrder(createOrderReq,requestUsername));
+      return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(createOrderReq,requestUsername));
   }
 
   @GetMapping("/{orderId}")
@@ -48,7 +48,7 @@ public class OrderController {
       @RequestHeader("X-User-Role") String requestRole,
       @RequestHeader("X-User-Username") String requestUsername
   ){
-    return null;
+    return ResponseEntity.status(HttpStatus.OK).body(orderService.updateOrder(orderId,updateOredrReq,requestRole,requestUsername));
   }
 
 }

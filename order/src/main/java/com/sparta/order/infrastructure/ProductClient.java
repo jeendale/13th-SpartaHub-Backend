@@ -1,5 +1,6 @@
 package com.sparta.order.infrastructure;
 
+
 import com.sparta.order.domain.service.ProductClientService;
 import com.sparta.order.infrastructure.dto.ProductIdResponseDto;
 import com.sparta.order.infrastructure.dto.ProductResponseDto;
@@ -19,5 +20,5 @@ public interface ProductClient extends ProductClientService {
 
   @PutMapping(value ="/api/v1/products/{productId}", headers = {"X-User-Username=\"\"", "X-User-Role=MASTER"})
   ResponseEntity<ProductIdResponseDto> updateProduct(@PathVariable UUID productId,
-      @RequestBody UpdateProductRequestDto requestDto);
+   @RequestBody UpdateProductRequestDto requestDto);
 }

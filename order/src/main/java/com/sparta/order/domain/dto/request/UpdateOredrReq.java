@@ -6,4 +6,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class UpdateOredrReq {
+  private int quantity;
+  private String request;
 }

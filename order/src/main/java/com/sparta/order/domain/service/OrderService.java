@@ -1,6 +1,7 @@
 package com.sparta.order.domain.service;
 
 import com.sparta.order.domain.dto.request.CreateOrderReq;
+import com.sparta.order.domain.dto.request.UpdateOredrReq;
 import com.sparta.order.domain.dto.response.GetOrderRes;
 import com.sparta.order.domain.dto.response.OrderIdRes;
 import com.sparta.order.exception.FeignClientExceptionMessage;
@@ -13,10 +14,12 @@ import com.sparta.order.infrastructure.dto.CreateShipmentRequestDto;
 import com.sparta.order.infrastructure.dto.GetHubInfoRes;
 import com.sparta.order.infrastructure.dto.GetShipmentManagerResponseDto;
 import com.sparta.order.infrastructure.dto.GetShipmentResponseDto;
+import com.sparta.order.infrastructure.dto.ProductIdResponseDto;
 import com.sparta.order.infrastructure.dto.ProductResponseDto;
 import com.sparta.order.infrastructure.dto.ShipmentResponseDto;
 import com.sparta.order.infrastructure.dto.SlackHistoryIdResponseDto;
 import com.sparta.order.infrastructure.dto.SlackRequestDto;
+import com.sparta.order.infrastructure.dto.UpdateProductRequestDto;
 import com.sparta.order.infrastructure.dto.UserResponseDto;
 import com.sparta.order.model.entity.Order;
 import com.sparta.order.model.repository.OrderRepository;
@@ -60,6 +63,8 @@ public class OrderService {
 
 
     ProductResponseDto productResponseDto=getProductResponseDto(createOrderReq.getProductId());
+
+
     AiMessageCreateResponseDto aiMessageCreateResponseDto = aiClientService.createAiMessage(
         AiMessageRequestDto.builder()
             .prompt(createOrderReq.getRequest())
@@ -127,7 +132,7 @@ public class OrderService {
     CompanyResponseDto requestCompany =getCompanyResponseDto(order.getRequestCompanyId());
     CompanyResponseDto receiveCompany =getCompanyResponseDto(order.getReceiveCompanyId());
 
-   return checkRole(order,
+   return checkRoleOrderRes(order,
        shipmentResponse,
        requestRole,
        userResponse,
@@ -137,9 +142,66 @@ public class OrderService {
        receiveCompany
    );
   }
+  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
+  public OrderIdRes updateOrder(
+      UUID orderId,
+      UpdateOredrReq updateOredrReq,
+      String requestRole,
+      String requestUsername) {
+    Order order=validateOrder(orderId);
+    UserResponseDto userResponse= getUserResponseDto(requestUsername);
+    if(requestRole.equals("MASTER")){
+      return  updateOrder(order,updateOredrReq);
+    }else if(requestRole.equals("HUB_MANAGER")){
+      GetShipmentResponseDto shipment=getShipment(order.getShipmentId());
+      GetHubInfoRes startHub=getHubResponseDto(shipment.getStartHubId());
+      GetHubInfoRes endHub=getHubResponseDto(shipment.getEndHubId());
+      if(userResponse.getUsername().equals(startHub.getUsername())||userResponse.getUsername().equals(endHub.getUsername())){
+       return updateOrder(order,updateOredrReq);
+      }
+      throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
+    }else{
+      throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
+    }
+
+  }
+
+  private OrderIdRes updateOrder(Order order, UpdateOredrReq updateOredrReq) {
 
 
+    ProductResponseDto product =getProductResponseDto(order.getProductId());
+    UpdateProductRequestDto updateProductRequestDto= UpdateProductRequestDto.builder()
+        .productName(null)
+        .count(updateOredrReq.getQuantity())
+        .build();
+    ProductIdResponseDto productId=updateProductResponseDto(product.getProductId(),updateProductRequestDto);
 
+
+    AiMessageCreateResponseDto aiMessageCreateResponseDto = aiClientService.createAiMessage(
+        AiMessageRequestDto.builder()
+            .prompt(updateOredrReq.getRequest())
+            .build()).getBody();
+
+    String message=
+        "  \"상품 정보\": \"" + product.getProductName() + "\",\n" +
+            "  \"수량\": " + updateOredrReq.getQuantity() + ",\n" +
+            "  \"뱐걍시힝\": \"" + aiMessageCreateResponseDto.getContent();
+
+    String slackId="C0842TW8FT7";
+    SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
+        SlackRequestDto.builder()
+            .message(message)
+            .recivedSlackId(slackId)
+            .build()
+    ).getBody();
+
+    order.updateProductId(productId.getProductId());
+    orderRepository.save(order);
+
+    return OrderIdRes.builder()
+        .orderId(order.getOrderId())
+        .build();
+  }
 
 
   private Order validateOrder(UUID orderId) {
@@ -169,7 +231,10 @@ public class OrderService {
   private GetHubInfoRes getHubResponseDto(UUID hubId) {
     return hubClientService.getHub(hubId).getBody();
   }
-  private GetOrderRes checkRole(Order order,
+  private ProductIdResponseDto updateProductResponseDto(UUID productId, UpdateProductRequestDto updateProductRequestDto) {
+    return productClientService.updateProduct(productId, updateProductRequestDto).getBody();
+  }
+  private GetOrderRes checkRoleOrderRes(Order order,
       GetShipmentResponseDto shipmentResponse,
       String requestRole,
       UserResponseDto userResponse,
@@ -218,6 +283,7 @@ public class OrderService {
         .build();
 
   }
+
 
 
   private String requestMessage(
@@ -278,4 +344,6 @@ public class OrderService {
 
 
   }
+
+
 }

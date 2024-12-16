@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +46,7 @@ public class UserController {
             @RequestHeader("X-User-Role") UserRoleEnum requestRole,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String nickname,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt") Pageable pageable) {
 
         Page<UserResponseDto> responseDtos = userService.searchUsers(requestRole, username, nickname, pageable);
 

@@ -1,5 +1,6 @@
 package com.sparta.company.model.repository;
 
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sparta.company.domain.dto.response.CompanyResponseDto;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
@@ -22,6 +24,8 @@ public class CompanyRepositoryCustomImpl implements CompanyRepositoryCustom {
 
     @Override
     public Page<CompanyResponseDto> searchCompanies(String companyName,CompanyType companyType , UUID hubID, Pageable pageable) {
+        Pageable validatedPageable = validatePageable(pageable);
+
         QCompany company = QCompany.company;
 
         // QueryDSL 쿼리 작성
@@ -41,8 +45,23 @@ public class CompanyRepositoryCustomImpl implements CompanyRepositoryCustom {
                         hubIdEq(hubID),
                         isNotDeleted()
                 )
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
+                .orderBy(validatedPageable.getSort().stream()
+                        .map(order -> {
+                            if ("createdAt".equals(order.getProperty())) {
+                                return order.isAscending()
+                                        ? company.createdAt.asc()
+                                        : company.createdAt.desc();
+                            } else if ("lastModifiedAt".equals(order.getProperty())) {
+                                return order.isAscending()
+                                        ? company.lastModifiedAt.asc()
+                                        : company.lastModifiedAt.desc();
+                            } else {
+                                throw new IllegalArgumentException("정렬 옵션이 잘못되었습니다: " + order.getProperty());
+                            }
+                        })
+                        .toArray(OrderSpecifier[]::new))
+                .offset(validatedPageable.getOffset())
+                .limit(validatedPageable.getPageSize())
                 .fetch();
 
         // Total count 쿼리
@@ -59,7 +78,7 @@ public class CompanyRepositoryCustomImpl implements CompanyRepositoryCustom {
                         .fetchOne()
         ).orElse(0L);
 
-        return PageableExecutionUtils.getPage(content, pageable, () -> total);
+        return PageableExecutionUtils.getPage(content, validatedPageable, () -> total);
     }
 
     private BooleanExpression companyNameContains(String companyName) {
@@ -76,5 +95,14 @@ public class CompanyRepositoryCustomImpl implements CompanyRepositoryCustom {
 
     private BooleanExpression isNotDeleted() {
         return QCompany.company.deleted.eq(false);
+    }
+
+    private Pageable validatePageable(Pageable pageable) {
+        int size = pageable.getPageSize();
+        if (size != 10 && size != 30 && size != 50) {
+            // 유효하지 않은 경우 기본값 10으로 수정
+            return PageRequest.of(pageable.getPageNumber(), 10, pageable.getSort());
+        }
+        return pageable;
     }
 }

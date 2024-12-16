@@ -5,10 +5,12 @@ import com.sparta.product.domain.dto.request.UpdateProductRequestDto;
 import com.sparta.product.domain.dto.response.ProductIdResponseDto;
 import com.sparta.product.domain.dto.response.ProductResponseDto;
 import com.sparta.product.domain.service.ProductService;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +34,7 @@ public class ProductController {
 
     @PostMapping
     ResponseEntity<ProductIdResponseDto> createProduct(
-            @RequestBody ProductRequestDto requestDto,
+            @Valid @RequestBody ProductRequestDto requestDto,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
 
@@ -59,7 +61,7 @@ public class ProductController {
             @RequestParam(required = false) UUID companyId,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt") Pageable pageable) {
 
         Page<ProductResponseDto> responseDtos = productService.getProducts(
                 productName, hubId, companyId, requestUsername, requestRole, pageable);
@@ -70,7 +72,7 @@ public class ProductController {
     @PutMapping("/{productId}")
     ResponseEntity<ProductIdResponseDto> updateProduct(
             @PathVariable UUID productId,
-            @RequestBody UpdateProductRequestDto requestDto,
+            @Valid @RequestBody UpdateProductRequestDto requestDto,
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
 

@@ -32,7 +32,14 @@ public class Product extends Audit{
     @Column(nullable = false)
     private String productName;
 
+    @Column(nullable = false)
+    private Integer count;
+
     public void updateProductName(String productName) {
         this.productName = productName;
+    }
+
+    public void updateCount(Integer count) {
+        this.count = count;
     }
 }

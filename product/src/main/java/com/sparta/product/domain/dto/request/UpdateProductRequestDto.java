@@ -1,5 +1,6 @@
 package com.sparta.product.domain.dto.request;
 
+import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -7,4 +8,6 @@ import lombok.Getter;
 @Builder
 public class UpdateProductRequestDto {
     private String productName;
+    @Min(0)
+    private Integer count;
 }

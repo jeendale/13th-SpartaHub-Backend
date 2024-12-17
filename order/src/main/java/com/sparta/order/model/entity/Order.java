@@ -28,7 +28,7 @@ public class Order extends Audit{
   @Column(nullable = false)
   private LocalDateTime orderDate;
   @Column(nullable = false)
-  private int quantity;
+  private Integer quantity;
   @Column(nullable = false)
   private String request;
   @Column(nullable = false)
@@ -44,7 +44,7 @@ public class Order extends Audit{
   private UUID shipmentId;
 
   public Order(LocalDateTime orderDate,
-      int quantity,
+      Integer quantity,
       String request,
       String username,
       UUID requestCompanyId,
@@ -66,5 +66,9 @@ public class Order extends Audit{
 
   public void updateProductId(UUID productId) {
     this.productId = productId;
+  }
+
+  public void updateRequest(String request) {
+    this.request = request;
   }
 }

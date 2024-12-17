@@ -12,10 +12,10 @@ public class CreateOrderReq {
   private UUID requestCompanyId;
   private UUID receiveCompanyId;
   private UUID productId;
-  private int quantity;
+  private Integer quantity;
   private String request;
 
-  public CreateOrderReq(UUID requestCompanyId, UUID receiveCompanyId, UUID productId,int quantity, String request) {
+  public CreateOrderReq(UUID requestCompanyId, UUID receiveCompanyId, UUID productId,Integer quantity, String request) {
     this.requestCompanyId = requestCompanyId;
     this.receiveCompanyId = receiveCompanyId;
     this.productId = productId;

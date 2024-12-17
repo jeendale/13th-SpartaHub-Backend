@@ -39,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class OrderService {
 
   private final OrderRepository orderRepository;
@@ -57,37 +58,29 @@ public class OrderService {
       String requestUsername
   ) {
     UserResponseDto userResponseDto = getUserResponseDto(requestUsername);
-    CompanyResponseDto requestCompany=getCompanyResponseDto(createOrderReq.getRequestCompanyId());
-    CompanyResponseDto receiveCompany=getCompanyResponseDto(createOrderReq.getReceiveCompanyId());
+    CompanyResponseDto requestCompany = getCompanyResponseDto(createOrderReq.getRequestCompanyId());
+    CompanyResponseDto receiveCompany = getCompanyResponseDto(createOrderReq.getReceiveCompanyId());
 
-    GetHubInfoRes startHub=getHubResponseDto(receiveCompany.getHubId());
-    GetHubInfoRes endHub=getHubResponseDto(requestCompany.getHubId());
+    GetHubInfoRes startHub = getHubResponseDto(receiveCompany.getHubId());
+    GetHubInfoRes endHub = getHubResponseDto(requestCompany.getHubId());
 
-
-    ProductResponseDto productResponseDto=getProductResponseDto(createOrderReq.getProductId());
-
+    ProductResponseDto productResponseDto = getProductResponseDto(createOrderReq.getProductId());
 
     AiMessageCreateResponseDto aiMessageCreateResponseDto = aiClientService.createAiMessage(
         AiMessageRequestDto.builder()
             .prompt(createOrderReq.getRequest())
             .build()).getBody();
 
-    String message=requestMessage(aiMessageCreateResponseDto.getContent(),
+    String message = requestMessage(aiMessageCreateResponseDto.getContent(),
         requestUsername,
         productResponseDto.getProductName(),
         createOrderReq.getQuantity(),
         startHub.getAddress(),
         endHub.getAddress()
     );
-    String slackId="C0842TW8FT7";
-    SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
-        SlackRequestDto.builder()
-            .message(message)
-            .recivedSlackId(slackId)
-            .build()
-    ).getBody();
+
     UUID orderId = UUID.randomUUID();
-    while (orderRepository.existsById(orderId)) { //베송아이디를 생성...?
+    while (orderRepository.existsById(orderId)) {
       orderId = UUID.randomUUID();
     }
     ShipmentResponseDto shipmentResponse = shipmentClientService.createShipment(
@@ -100,15 +93,22 @@ public class OrderService {
             .orderId(orderId)
             .build()).getBody();
 
-    Order oreder =orderRepository.save(Order.builder()
-            .orderDate(LocalDateTime.now())
-            .quantity(createOrderReq.getQuantity())
-            .request(message)
-            .username(userResponseDto.getUsername())
-            .requestCompanyId(requestCompany.getCompanyId())
-            .receiveCompanyId(receiveCompany.getCompanyId())
-            .productId(productResponseDto.getProductId())
-            .shipmentId(shipmentResponse.getShipmentId())
+    ProductIdResponseDto productupdate =
+        updateProductResponseDto(createOrderReq.getProductId(),
+            UpdateProductRequestDto.builder()
+                .productName(null)
+                .count(createOrderReq.getQuantity())
+                .build());
+
+    Order oreder = orderRepository.save(Order.builder()
+        .orderDate(LocalDateTime.now())
+        .quantity(createOrderReq.getQuantity())
+        .request(createOrderReq.getRequest())
+        .username(userResponseDto.getUsername())
+        .requestCompanyId(requestCompany.getCompanyId())
+        .receiveCompanyId(receiveCompany.getCompanyId())
+        .productId(productupdate.getProductId())
+        .shipmentId(shipmentResponse.getShipmentId())
         .build());
     System.out.println("여기");
 
@@ -116,132 +116,154 @@ public class OrderService {
 
     orderRepository.save(oreder);
 
-    return OrderIdRes.builder()
-        .orderId(oreder.getOrderId())
-        .build();
-  }
-
-
-
-  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
-  public GetOrderRes getOrder(UUID orderId, String requestRole, String requestUsername) {
-    Order order = validateOrder(orderId);
-    UserResponseDto userResponse= getUserResponseDto(requestUsername);
-
-    GetShipmentResponseDto shipmentResponse=getShipment(order.getShipmentId());
-    GetHubInfoRes startHubInfo=getHubResponseDto(shipmentResponse.getStartHubId());
-    GetHubInfoRes endHubInfo=getHubResponseDto(shipmentResponse.getEndHubId());
-    CompanyResponseDto requestCompany =getCompanyResponseDto(order.getRequestCompanyId());
-    CompanyResponseDto receiveCompany =getCompanyResponseDto(order.getReceiveCompanyId());
-
-   return checkRoleOrderRes(order,
-       shipmentResponse,
-       requestRole,
-       userResponse,
-       startHubInfo,
-       endHubInfo,
-       requestCompany,
-       receiveCompany
-   );
-  }
-  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
-  public OrderIdRes updateOrder(
-      UUID orderId,
-      UpdateOredrReq updateOredrReq,
-      String requestRole,
-      String requestUsername) {
-    Order order=validateOrder(orderId);
-    UserResponseDto userResponse= getUserResponseDto(requestUsername);
-    if(requestRole.equals("MASTER")){
-      return  updateOrder(order,updateOredrReq);
-    }else if(requestRole.equals("HUB_MANAGER")){
-      GetShipmentResponseDto shipment=getShipment(order.getShipmentId());
-      GetHubInfoRes startHub=getHubResponseDto(shipment.getStartHubId());
-      GetHubInfoRes endHub=getHubResponseDto(shipment.getEndHubId());
-      if(userResponse.getUsername().equals(startHub.getUsername())||userResponse.getUsername().equals(endHub.getUsername())){
-       return updateOrder(order,updateOredrReq);
-      }
-      throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
-    }else{
-      throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
-    }
-
-  }
-  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
-  public OrderIdRes deleteOrder(UUID orderId, String requestRole, String requestUsername) {
-    Order order=validateOrder(orderId);
-    UserResponseDto userResponse= getUserResponseDto(requestUsername);
-    if(requestRole.equals("MASTER")){
-      return  deleteOredrRes(order,userResponse.getUsername());
-    }else if(requestRole.equals("HUB_MANAGER")){
-
-      GetShipmentResponseDto shipment=getShipment(order.getShipmentId());
-      GetHubInfoRes startHub=getHubResponseDto(shipment.getStartHubId());
-      GetHubInfoRes endHub=getHubResponseDto(shipment.getEndHubId());
-
-      if(userResponse.getUsername().equals(startHub.getUsername())||userResponse.getUsername().equals(endHub.getUsername())){
-        return  deleteOredrRes(order,userResponse.getUsername());
-      }
-      throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
-    }else{
-      throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
-    }
-
-  }
-
-
-
-
-  private OrderIdRes updateOrder(Order order, UpdateOredrReq updateOredrReq) {
-
-
-    ProductResponseDto product =getProductResponseDto(order.getProductId());
-    UpdateProductRequestDto updateProductRequestDto= UpdateProductRequestDto.builder()
-        .productName(null)
-        .count(updateOredrReq.getQuantity())
-        .build();
-    ProductIdResponseDto productId=updateProductResponseDto(product.getProductId(),updateProductRequestDto);
-
-
-    AiMessageCreateResponseDto aiMessageCreateResponseDto = aiClientService.createAiMessage(
-        AiMessageRequestDto.builder()
-            .prompt(updateOredrReq.getRequest())
-            .build()).getBody();
-
-    String message=
-        "  \"상품 정보\": \"" + product.getProductName() + "\",\n" +
-            "  \"수량\": " + updateOredrReq.getQuantity() + ",\n" +
-            "  \"뱐걍시힝\": \"" + aiMessageCreateResponseDto.getContent();
-
-    String slackId="C0842TW8FT7";
+    String slackId = "C0842TW8FT7";
     SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
         SlackRequestDto.builder()
             .message(message)
             .recivedSlackId(slackId)
             .build()
     ).getBody();
+    return OrderIdRes.builder()
+        .orderId(oreder.getOrderId())
+        .build();
+  }
 
-    order.updateProductId(productId.getProductId());
+
+  @Transactional(readOnly = true)
+  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
+  public GetOrderRes getOrder(UUID orderId, String requestRole, String requestUsername) {
+    Order order = validateOrder(orderId);
+    UserResponseDto userResponse = getUserResponseDto(requestUsername);
+
+
+    GetShipmentResponseDto shipmentResponse = getShipment(order.getShipmentId());
+    GetHubInfoRes startHubInfo = getHubResponseDto(shipmentResponse.getStartHubId());
+    GetHubInfoRes endHubInfo = getHubResponseDto(shipmentResponse.getEndHubId());
+    CompanyResponseDto requestCompany = getCompanyResponseDto(order.getRequestCompanyId());
+    CompanyResponseDto receiveCompany = getCompanyResponseDto(order.getReceiveCompanyId());
+    return checkRoleOrderRes(order, shipmentResponse, requestRole, userResponse,
+        startHubInfo, endHubInfo, requestCompany, receiveCompany);
+
+  }
+
+  @Transactional
+  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
+  public OrderIdRes updateOrder(
+      UUID orderId,
+      UpdateOredrReq updateOredrReq,
+      String requestRole,
+      String requestUsername) {
+    Order order = validateOrder(orderId);
+    UserResponseDto userResponse = getUserResponseDto(requestUsername);
+    if (requestRole.equals("MASTER")) {
+      return updateOrder(order, updateOredrReq);
+    } else if (requestRole.equals("HUB_MANAGER")) {
+      GetShipmentResponseDto shipment = getShipment(order.getShipmentId());
+      GetHubInfoRes startHub = getHubResponseDto(shipment.getStartHubId());
+      GetHubInfoRes endHub = getHubResponseDto(shipment.getEndHubId());
+      if (userResponse.getUsername().equals(startHub.getUsername()) || userResponse.getUsername()
+          .equals(endHub.getUsername())) {
+        return updateOrder(order, updateOredrReq);
+      }
+      throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
+    } else {
+      throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
+    }
+
+  }
+
+  @Transactional
+  @CircuitBreaker(name = "order-service", fallbackMethod = "fallback")
+  public OrderIdRes deleteOrder(UUID orderId, String requestRole, String requestUsername) {
+    Order order = validateOrder(orderId);
+    UserResponseDto userResponse = getUserResponseDto(requestUsername);
+    if (requestRole.equals("MASTER")) {
+      return deleteOredrRes(order, userResponse.getUsername());
+    } else if (requestRole.equals("HUB_MANAGER")) {
+
+      GetShipmentResponseDto shipment = getShipment(order.getShipmentId());
+      GetHubInfoRes startHub = getHubResponseDto(shipment.getStartHubId());
+      GetHubInfoRes endHub = getHubResponseDto(shipment.getEndHubId());
+
+      if (userResponse.getUsername().equals(startHub.getUsername()) || userResponse.getUsername()
+          .equals(endHub.getUsername())) {
+        return deleteOredrRes(order, userResponse.getUsername());
+      }
+      throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
+    } else {
+      throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
+    }
+
+  }
+
+
+  private OrderIdRes updateOrder(Order order, UpdateOredrReq updateOredrReq) {
+
+    ProductResponseDto product = getProductResponseDto(order.getProductId());
+
+    if (updateOredrReq.getQuantity() != null) {
+      int quantity = updateOredrReq.getQuantity();
+      if (quantity < 0) {
+        throw new IllegalArgumentException(
+            OrderExceptionMessage.PRODUCT_QUANTITY_ERROR.getMessage());
+      }
+      int total = product.getCount() + order.getQuantity() - updateOredrReq.getQuantity();
+      if (total < 0) {
+        throw new IllegalArgumentException(
+            OrderExceptionMessage.PRODUCT_QUANTITY_OVER.getMessage());
+      }
+      UpdateProductRequestDto updateProductRequestDto = UpdateProductRequestDto.builder()
+          .productName(null)
+          .count(total)
+          .build();
+      ProductIdResponseDto productId = updateProductResponseDto(product.getProductId(),
+          updateProductRequestDto);
+      order.updateProductId(productId.getProductId());
+    }
+
+    if (updateOredrReq.getRequest() != null) {
+      AiMessageCreateResponseDto aiMessageCreateResponseDto = aiClientService.createAiMessage(
+          AiMessageRequestDto.builder()
+              .prompt(updateOredrReq.getRequest())
+              .build()).getBody();
+
+      String message =
+          "  \"상품 정보\": \"" + product.getProductName() + "\",\n" +
+              "  \"수량\": " + updateOredrReq.getQuantity() + ",\n" +
+              "  \"뱐걍시힝\": \"" + aiMessageCreateResponseDto.getContent();
+
+      String slackId = "C0842TW8FT7";
+      SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
+          SlackRequestDto.builder()
+              .message(message)
+              .recivedSlackId(slackId)
+              .build()
+      ).getBody();
+      order.updateRequest(updateOredrReq.getRequest());
+    }
+
     orderRepository.save(order);
 
     return OrderIdRes.builder()
         .orderId(order.getOrderId())
         .build();
   }
-  private OrderIdRes deleteOredrRes(Order order,String username) {
-    ProductResponseDto product =getProductResponseDto(order.getProductId());
-    int beforeOrderQuantity= order.getQuantity()+product.getCount();
-    UpdateProductRequestDto updateProductRequestDto= UpdateProductRequestDto.builder()
+
+  private OrderIdRes deleteOredrRes(Order order, String username) {
+    ProductResponseDto product = getProductResponseDto(order.getProductId());
+    int beforeOrderQuantity = order.getQuantity() + product.getCount();
+    UpdateProductRequestDto updateProductRequestDto = UpdateProductRequestDto.builder()
         .productName(null)
         .count(beforeOrderQuantity)
         .build();
-    ProductIdResponseDto productId=updateProductResponseDto(product.getProductId(),updateProductRequestDto);
+    ProductIdResponseDto productId = updateProductResponseDto(product.getProductId(),
+        updateProductRequestDto);
 
-    String message=
+    String message =
         "  \"상품 정보\": \"" + product.getProductName() + "\",\n" +
-            "  \"뱐걍시힝\": \" \"삭제되었습니다.\" " ;
+            "  \"뱐걍시힝\": \" \"삭제되었습니다.\" ";
 
-    String slackId="C0842TW8FT7";
+    String slackId = "C0842TW8FT7";
     SlackHistoryIdResponseDto slackHistoryIdResponseDto = slackClientService.createSlackMessage(
         SlackRequestDto.builder()
             .message(message)
@@ -257,24 +279,34 @@ public class OrderService {
         .orderId(order.getOrderId())
         .build();
   }
+
   public Page<GetOrderRes> searchOrders(
       String username,
       UUID requestCompanyId,
       UUID receiveCompanyId,
       UUID productId,
       UUID shipmentId,
-      Pageable pageable) {
-      return null;
+      Pageable pageable,
+      String requestRole,
+      String requestUsername
+  ) {
+
+    return orderRepository.searchOrders(username, requestCompanyId, receiveCompanyId, productId,
+        shipmentId, pageable);
   }
+
+
   private Order validateOrder(UUID orderId) {
     return orderRepository.findById(orderId).orElseThrow(() ->
         new IllegalArgumentException(OrderExceptionMessage.ORDER_NOT_FOUND.getMessage())
     );
   }
+
   private GetShipmentResponseDto getShipment(UUID shipmentId) {
     return shipmentClientService.getShipmentById(shipmentId).getBody();
   }
-  private GetShipmentManagerResponseDto getShipmentMAnager(UUID shipmentManagerId) {
+
+  private GetShipmentManagerResponseDto getShipmentManager(UUID shipmentManagerId) {
     return shipmentClientService.getShipmentManagerById(shipmentManagerId).getBody();
   }
 
@@ -282,8 +314,9 @@ public class OrderService {
   private UserResponseDto getUserResponseDto(String username) {
     return userClientService.getUser(username).getBody();
   }
+
   private CompanyResponseDto getCompanyResponseDto(UUID receiveCompanyId) {
-   return companyClientService.getCompany(receiveCompanyId).getBody();
+    return companyClientService.getCompany(receiveCompanyId).getBody();
   }
 
   private ProductResponseDto getProductResponseDto(UUID productId) {
@@ -293,9 +326,12 @@ public class OrderService {
   private GetHubInfoRes getHubResponseDto(UUID hubId) {
     return hubClientService.getHub(hubId).getBody();
   }
-  private ProductIdResponseDto updateProductResponseDto(UUID productId, UpdateProductRequestDto updateProductRequestDto) {
+
+  private ProductIdResponseDto updateProductResponseDto(UUID productId,
+      UpdateProductRequestDto updateProductRequestDto) {
     return productClientService.updateProduct(productId, updateProductRequestDto).getBody();
   }
+
   private GetOrderRes checkRoleOrderRes(Order order,
       GetShipmentResponseDto shipmentResponse,
       String requestRole,
@@ -305,28 +341,29 @@ public class OrderService {
       CompanyResponseDto requestCompany,
       CompanyResponseDto receiveCompany
   ) {
-    if(requestRole.equals("MASTER")){
-      return buildGetOrderRes(order,userResponse);
-    }else if(requestRole.equals("HUB_MANAGER")){
-      if(startHubInfo.getUsername().equals(userResponse.getUsername())||
-      endHubInfo.getUsername().equals(userResponse.getUsername())){
-        return buildGetOrderRes(order,userResponse);
+    if (requestRole.equals("MASTER")) {
+      return buildGetOrderRes(order, userResponse);
+    } else if (requestRole.equals("HUB_MANAGER")) {
+      if (startHubInfo.getUsername().equals(userResponse.getUsername()) ||
+          endHubInfo.getUsername().equals(userResponse.getUsername())) {
+        return buildGetOrderRes(order, userResponse);
       }
       throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_HUB.getMessage());
 
-    }else if(requestRole.equals("COMPANY_MANAGER")){
-      if(requestCompany.getUsername().equals(userResponse.getUsername())||
-          receiveCompany.getUsername().equals(userResponse.getUsername())){
-        return buildGetOrderRes(order,userResponse);
+    } else if (requestRole.equals("COMPANY_MANAGER")) {
+      if (requestCompany.getUsername().equals(userResponse.getUsername()) ||
+          receiveCompany.getUsername().equals(userResponse.getUsername())) {
+        return buildGetOrderRes(order, userResponse);
       }
       throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_COMANY.getMessage());
-    }else if(requestRole.equals("SHIPMENT_MANAGER")){
-      GetShipmentManagerResponseDto manager =getShipmentMAnager(shipmentResponse.getShipmentManagerId());
-      if(manager.getUsername().equals(userResponse.getUsername())){
-        return buildGetOrderRes(order,userResponse);
+    } else if (requestRole.equals("SHIPMENT_MANAGER")) {
+      GetShipmentManagerResponseDto manager = getShipmentManager(
+          shipmentResponse.getShipmentManagerId());
+      if (manager.getUsername().equals(userResponse.getUsername())) {
+        return buildGetOrderRes(order, userResponse);
       }
       throw new IllegalArgumentException(OrderExceptionMessage.NOT_YOUR_SHIPMENT.getMessage());
-    }else{
+    } else {
       throw new IllegalArgumentException(OrderExceptionMessage.CHECK_USER_ROlE.getMessage());
     }
   }
@@ -347,7 +384,6 @@ public class OrderService {
   }
 
 
-
   private String requestMessage(
       String request,
       String requestUsername,
@@ -363,37 +399,46 @@ public class OrderService {
             "  \"수량\": " + quantity + ",\n" +
             "  \"출발허브 주소\": \"" + starthub + "\",\n" +
             "  \"도착허브 주소\": \"" + endhub + "\",\n" +
-            "  \"요청사항 답변\": \"" + request + "\"\n" ;
+            "  \"요청사항 답변\": \"" + request + "\"\n";
   }
 
   public OrderIdRes fallback(Throwable throwable) {
     if (throwable instanceof BadRequest) {
       log.warn("User 400 Bad Request 발생: {}", throwable.getMessage());
-      if (throwable.getMessage().contains(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage())) {
+      if (throwable.getMessage()
+          .contains(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage())) {
         throw new IllegalArgumentException(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage());
       }
-      if (throwable.getMessage().contains(FeignClientExceptionMessage.COMPANY_NOT_FOUND.getMessage())) {
-        throw new IllegalArgumentException(FeignClientExceptionMessage.COMPANY_NOT_FOUND.getMessage());
+      if (throwable.getMessage()
+          .contains(FeignClientExceptionMessage.COMPANY_NOT_FOUND.getMessage())) {
+        throw new IllegalArgumentException(
+            FeignClientExceptionMessage.COMPANY_NOT_FOUND.getMessage());
       }
-      if (throwable.getMessage().contains(FeignClientExceptionMessage.PRODUCT_NOT_FOUND.getMessage())) {
-        throw new IllegalArgumentException(FeignClientExceptionMessage.PRODUCT_NOT_FOUND.getMessage());
+      if (throwable.getMessage()
+          .contains(FeignClientExceptionMessage.PRODUCT_NOT_FOUND.getMessage())) {
+        throw new IllegalArgumentException(
+            FeignClientExceptionMessage.PRODUCT_NOT_FOUND.getMessage());
       }
       if (throwable.getMessage().contains(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage())) {
         throw new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
       }
-      if (throwable.getMessage().contains(FeignClientExceptionMessage.SHIPMEMT_NOT_FOUND.getMessage())) {
-        throw new IllegalArgumentException(FeignClientExceptionMessage.SHIPMEMT_NOT_FOUND.getMessage());
+      if (throwable.getMessage()
+          .contains(FeignClientExceptionMessage.SHIPMEMT_NOT_FOUND.getMessage())) {
+        throw new IllegalArgumentException(
+            FeignClientExceptionMessage.SHIPMEMT_NOT_FOUND.getMessage());
       }
     }
 
     if (throwable instanceof RetryableException) {
       log.warn("RetryableException 발생");
-      throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+      throw new ServiceNotAvailableException(
+          FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
     }
 
     if (throwable instanceof ServiceUnavailable) {
       log.warn("ServiceUnavailableException 발생");
-      throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+      throw new ServiceNotAvailableException(
+          FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
     }
 
     if (throwable instanceof IllegalArgumentException) {
@@ -402,11 +447,11 @@ public class OrderService {
     }
 
     log.warn("기타 예외 발생: {}", String.valueOf(throwable));
-    throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+    throw new ServiceNotAvailableException(
+        FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
 
 
   }
-
 
 
 }

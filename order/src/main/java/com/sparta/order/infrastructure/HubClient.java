@@ -12,6 +12,4 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface HubClient extends HubClientService {
   @GetMapping(value = "/api/v1/hubs/{hubId}")
   ResponseEntity<GetHubInfoRes> getHub(@PathVariable UUID hubId);
-
-
 }

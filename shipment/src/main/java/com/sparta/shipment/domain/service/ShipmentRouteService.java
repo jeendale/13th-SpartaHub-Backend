@@ -5,6 +5,7 @@ import com.sparta.shipment.domain.dto.request.UpdateShipmentRouteRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentRouteResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentRouteResponseDto;
 import com.sparta.shipment.exception.FeignClientExceptionMessage;
+import com.sparta.shipment.exception.ServiceNotAvailableException;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
@@ -18,11 +19,17 @@ import com.sparta.shipment.model.entity.ShipmentStatusEnum;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;
 import com.sparta.shipment.model.repository.ShipmentRepository;
 import com.sparta.shipment.model.repository.ShipmentRouteRepository;
+import feign.FeignException.BadRequest;
+import feign.FeignException.ServiceUnavailable;
+import feign.RetryableException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ShipmentRouteService {
 
     private final ShipmentRepository shipmentRepository;
@@ -39,6 +47,7 @@ public class ShipmentRouteService {
     private final HubClientService hubClientService;
 
     @Transactional
+    @CircuitBreaker(name = "shipment-route-service", fallbackMethod = "fallbackForDto")
     public ShipmentRouteResponseDto createShipmentRoute(CreateShipmentRouteRequestDto request, String requestRole) {
 
         validateCreateRole(requestRole);
@@ -76,6 +85,7 @@ public class ShipmentRouteService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-route-service", fallbackMethod = "fallbackForDto")
     public ShipmentRouteResponseDto updateShipmentRoute(UUID shipmentRouteId,
                                                         UpdateShipmentRouteRequestDto request,
                                                         String requestUsername, String requestRole) {
@@ -114,6 +124,7 @@ public class ShipmentRouteService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-route-service", fallbackMethod = "fallbackForDto")
     public ShipmentRouteResponseDto deleteShipmentRoute(UUID shipmentRouteId, String requestUsername,
                                                         String requestRole) {
         validateDeleteRole(requestRole);
@@ -128,6 +139,7 @@ public class ShipmentRouteService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-route-service", fallbackMethod = "fallbackForGetDto")
     public GetShipmentRouteResponseDto getShipmentRouteById(UUID shipmentRouteId, String requestUsername,
                                                             String requestRole) {
 
@@ -147,6 +159,7 @@ public class ShipmentRouteService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-route-service", fallbackMethod = "fallbackForPageGetDto")
     public Page<GetShipmentRouteResponseDto> getShipmentRoutes(String shipmentStatus, UUID hubId,
                                                                UUID shipmentManagerId,
                                                                Pageable pageable, String requestUsername,
@@ -242,5 +255,51 @@ public class ShipmentRouteService {
             }
         }
 
+    }
+
+    private void fallback(Throwable throwable) {
+        if (throwable instanceof BadRequest) {
+            log.warn("User 400 Bad Request 발생: {}", throwable.getMessage());
+            if (throwable.getMessage().contains(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage())) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
+            }
+
+            if (throwable.getMessage().contains(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage())) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage());
+            }
+        }
+
+        if (throwable instanceof RetryableException) {
+            log.warn("RetryableException 발생");
+            throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+        }
+
+        if (throwable instanceof ServiceUnavailable) {
+            log.warn("ServiceUnavailableException 발생");
+            throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+        }
+
+        if (throwable instanceof IllegalArgumentException) {
+            log.warn("IllegalArgumentException 발생");
+            throw new IllegalArgumentException(throwable.getMessage());
+        }
+
+        log.warn("기타 예외 발생: {}", String.valueOf(throwable));
+        throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+    }
+
+    public ShipmentRouteResponseDto fallbackForDto(Throwable throwable) {
+        fallback(throwable);
+        return new ShipmentRouteResponseDto();
+    }
+
+    public GetShipmentRouteResponseDto fallbackForGetDto(Throwable throwable) {
+        fallback(throwable);
+        return new GetShipmentRouteResponseDto();
+    }
+
+    public Page<GetShipmentRouteResponseDto> fallbackForPageGetDto(Throwable throwable) {
+        fallback(throwable);
+        return new PageImpl<>(new ArrayList<>(), Pageable.unpaged(), 0);
     }
 }

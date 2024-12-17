@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = {"com.sparta.Hub.domain.controller"})
 public class GlobalExceptionHandler {
   @ExceptionHandler({IllegalArgumentException.class})
   public ResponseEntity<RestApiException> illegalArgumentExceptionHandler(IllegalArgumentException ex) {

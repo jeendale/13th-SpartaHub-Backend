@@ -61,7 +61,7 @@ public class ProductService {
                 .build();
     }
 
-    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
+    @CircuitBreaker(name = "company-service", fallbackMethod = "getFallback")
     public ProductResponseDto getProduct(UUID productId, String requestUsername, String requestRole) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(
@@ -83,7 +83,7 @@ public class ProductService {
                 .build();
     }
 
-    @CircuitBreaker(name = "company-service", fallbackMethod = "fallback")
+    @CircuitBreaker(name = "company-service", fallbackMethod = "searchFallback")
     public Page<ProductResponseDto> getProducts(String productName, UUID hubId, UUID companyId,
                                                 String requestUsername, String requestRole, Pageable pageable) {
 
@@ -219,7 +219,7 @@ public class ProductService {
         }
     }
 
-    public ProductIdResponseDto fallback(Throwable throwable) {
+    private void handleFallback(Throwable throwable) {
         if (throwable instanceof BadRequest) {
             log.warn("400 Bad Request 발생: {}", throwable.getMessage());
             if (throwable.getMessage().contains(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage())) {
@@ -248,5 +248,20 @@ public class ProductService {
 
         log.warn("기타 예외 발생: {}", String.valueOf(throwable));
         throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+    }
+
+    public ProductIdResponseDto fallback(Throwable throwable) {
+        handleFallback(throwable);
+        return ProductIdResponseDto.builder().build();
+    }
+
+    public ProductResponseDto getFallback(Throwable throwable) {
+       handleFallback(throwable);
+       return ProductResponseDto.builder().build();
+    }
+
+    public Page<ProductResponseDto> searchFallback(Throwable throwable) {
+        handleFallback(throwable);
+        return Page.empty();
     }
 }

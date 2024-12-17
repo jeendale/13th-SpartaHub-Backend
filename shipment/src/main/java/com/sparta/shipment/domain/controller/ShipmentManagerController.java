@@ -6,11 +6,9 @@ import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
 import com.sparta.shipment.domain.service.ShipmentManagerService;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -86,19 +84,10 @@ public class ShipmentManagerController {
             @RequestHeader("X-User-Username") String requestUsername,
             @RequestHeader("X-User-Role") String requestRole) {
 
-        Pageable adjustedPageable = adjustPageSize(pageable, List.of(10, 30, 50), 10);
-
         Page<GetShipmentManagerResponseDto> response = shipmentManagerService.getShipmentManagers(username, managerType,
                 hubId,
-                adjustedPageable, requestUsername, requestRole);
+                pageable, requestUsername, requestRole);
 
         return ResponseEntity.status(HttpStatus.OK).body((new PagedModel<>(response)));
-    }
-
-    private Pageable adjustPageSize(Pageable pageable, List<Integer> allowSizes, int defaultSize) {
-        if (!allowSizes.contains(pageable.getPageSize())) {
-            return PageRequest.of(pageable.getPageNumber(), defaultSize, pageable.getSort());
-        }
-        return pageable;
     }
 }

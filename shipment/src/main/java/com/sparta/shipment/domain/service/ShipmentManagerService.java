@@ -5,19 +5,26 @@ import com.sparta.shipment.domain.dto.request.UpdateShipmentManagerRequestDto;
 import com.sparta.shipment.domain.dto.response.GetShipmentManagerResponseDto;
 import com.sparta.shipment.domain.dto.response.ShipmentManagerResponseDto;
 import com.sparta.shipment.exception.FeignClientExceptionMessage;
+import com.sparta.shipment.exception.ServiceNotAvailableException;
 import com.sparta.shipment.exception.ShipmentCommonExceptionMessage;
 import com.sparta.shipment.exception.ShipmentManagerExceptionMessage;
 import com.sparta.shipment.infrastructure.dto.GetHubInfoRes;
 import com.sparta.shipment.infrastructure.dto.UserResponseDto;
 import com.sparta.shipment.model.entity.ShipmentManager;
 import com.sparta.shipment.model.repository.ShipmentManagerRepository;
+import feign.FeignException.BadRequest;
+import feign.FeignException.ServiceUnavailable;
+import feign.RetryableException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +43,7 @@ public class ShipmentManagerService {
     private final HubClientService hubClientService;
 
     @Transactional
+    @CircuitBreaker(name = "shipment-manager-service", fallbackMethod = "fallbackForDto")
     public ShipmentManagerResponseDto createShipmentManager(CreateShipmentManagerRequestDto request,
                                                             String requestUsername,
                                                             String requestRole) {
@@ -65,6 +73,7 @@ public class ShipmentManagerService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-manager-service", fallbackMethod = "fallbackForDto")
     public ShipmentManagerResponseDto deleteShipmentManager(UUID shipmentManagerId, String requestUsername,
                                                             String requestRole) {
         validateRole(requestRole);
@@ -79,6 +88,7 @@ public class ShipmentManagerService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-manager-service", fallbackMethod = "fallbackForDto")
     public ShipmentManagerResponseDto updateShipmentManager(UUID shipmentManagerId,
                                                             UpdateShipmentManagerRequestDto request,
                                                             String requestUsername, String requestRole) {
@@ -103,6 +113,7 @@ public class ShipmentManagerService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-manager-service", fallbackMethod = "fallbackForGetDto")
     public GetShipmentManagerResponseDto getShipmentManagerById(UUID shipmentManagerId, String requestUsername,
                                                                 String requestRole) {
 
@@ -121,6 +132,7 @@ public class ShipmentManagerService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "shipment-manager-service", fallbackMethod = "fallbackForPageGetDto")
     public Page<GetShipmentManagerResponseDto> getShipmentManagers(String username, String managerType, UUID hubId,
                                                                    Pageable pageable, String requestUsername,
                                                                    String requestRole) {
@@ -193,6 +205,52 @@ public class ShipmentManagerService {
             }
         }
 
+    }
+
+    private void fallback(Throwable throwable) {
+        if (throwable instanceof BadRequest) {
+            log.warn("User 400 Bad Request 발생: {}", throwable.getMessage());
+            if (throwable.getMessage().contains(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage())) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.HUB_NOT_FOUND.getMessage());
+            }
+
+            if (throwable.getMessage().contains(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage())) {
+                throw new IllegalArgumentException(FeignClientExceptionMessage.USER_NOT_FOUND.getMessage());
+            }
+        }
+
+        if (throwable instanceof RetryableException) {
+            log.warn("RetryableException 발생");
+            throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+        }
+
+        if (throwable instanceof ServiceUnavailable) {
+            log.warn("ServiceUnavailableException 발생");
+            throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+        }
+
+        if (throwable instanceof IllegalArgumentException) {
+            log.warn("IllegalArgumentException 발생");
+            throw new IllegalArgumentException(throwable.getMessage());
+        }
+
+        log.warn("기타 예외 발생: {}", String.valueOf(throwable));
+        throw new ServiceNotAvailableException(FeignClientExceptionMessage.SERVICE_NOT_AVAILABLE.getMessage());
+    }
+
+    public ShipmentManagerResponseDto fallbackForDto(Throwable throwable) {
+        fallback(throwable);
+        return new ShipmentManagerResponseDto();
+    }
+
+    public GetShipmentManagerResponseDto fallbackForGetDto(Throwable throwable) {
+        fallback(throwable);
+        return new GetShipmentManagerResponseDto();
+    }
+
+    public Page<GetShipmentManagerResponseDto> fallbackForPageGetDto(Throwable throwable) {
+        fallback(throwable);
+        return new PageImpl<>(new ArrayList<>(), Pageable.unpaged(), 0);
     }
 
 }

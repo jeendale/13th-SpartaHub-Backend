@@ -11,6 +11,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,7 @@ public class HubRouteController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) UUID startHubId,
       @RequestParam(required = false) UUID endHubId,
-      Pageable pageable
+      @PageableDefault(sort = "createdAt")Pageable pageable
   ){
     Page<GetHubRouteInfoRes> resPage;
 

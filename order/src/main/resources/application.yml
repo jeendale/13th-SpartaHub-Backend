@@ -1,13 +1,6 @@
 spring:
   application:
-    name: hub-service
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      username: ${REDIS_NAME}
-      password: ${REDIS_PASSWORD}
+    name: order-service
 
   datasource:
     url: jdbc:postgresql://localhost:5432/${POSTGRESQL_DB_NAME}
@@ -20,12 +13,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    defer-datasource-initialization: true
     show-sql: true
-  sql:
-    init:
-      mode: never #alwqys-> Run할때마다 data.sql 데이터 삽입 never-> data.sql 파일 신경 안씀 (처음 추가한 다음 never 바꿔주세요)
-
 
 eureka:
   client:
@@ -63,11 +51,7 @@ service:
     access-expiration: 3600000
     secret-key: ${JWT_SECRET_KEY}
 server:
-  port: 19101
-
-kakao:
-  api:
-    key: bc810dfa4da1b613f598f9e3e098ecc4
+  port: 19102
 
 management:
   zipkin:
@@ -79,4 +63,4 @@ management:
 
 openapi:
   service:
-    url : http://localhost:19091/hub-service
+    url : http://localhost:19091/order-service

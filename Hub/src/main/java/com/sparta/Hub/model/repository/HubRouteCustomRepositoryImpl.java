@@ -1,7 +1,9 @@
 package com.sparta.Hub.model.repository;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.querydsl.core.types.OrderSpecifier;
 import com.sparta.Hub.domain.dto.response.GetHubRouteInfoRes;
 import com.sparta.Hub.model.entity.HubRoute;
 import com.sparta.Hub.model.entity.QHubRoute;
@@ -10,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 public class HubRouteCustomRepositoryImpl implements HubRouteCustomRepository {
@@ -24,9 +27,13 @@ public class HubRouteCustomRepositoryImpl implements HubRouteCustomRepository {
   public Page<GetHubRouteInfoRes> searchHubRoutes(String keyword, Pageable pageable) {
     QHubRoute hubRoute = QHubRoute.hubRoute;
 
+
+    Pageable validatedPageable = validatePageable(pageable);
+
+
     JPQLQuery<HubRoute> query;
     if (keyword == null || keyword.isBlank()) {
-      query = queryFactory.selectFrom(hubRoute); // 조건 없이 전체 검색
+      query = queryFactory.selectFrom(hubRoute);
     } else {
       query = queryFactory.selectFrom(hubRoute)
           .where(
@@ -35,15 +42,19 @@ public class HubRouteCustomRepositoryImpl implements HubRouteCustomRepository {
           );
     }
 
-    List<HubRoute> hubRouteList=query.offset(pageable.getOffset())
-        .limit(pageable.getPageSize())
+    query = applySorting(query, validatedPageable);
+
+    List<HubRoute> hubRouteList = query.offset(validatedPageable.getOffset())
+        .limit(validatedPageable.getPageSize())
         .fetch();
 
     long total = query.fetchCount();
 
-    List<GetHubRouteInfoRes> infoResList= hubRouteList.stream()
-        .map(h->GetHubRouteInfoRes.builder()
+    List<GetHubRouteInfoRes> infoResList = hubRouteList.stream()
+        .map(h -> GetHubRouteInfoRes.builder()
             .hubRouteId(h.getHubId())
+            .startHubId(h.getStartHub().getHubId())
+            .endHubId(h.getEndHub().getHubId())
             .startHubName(h.getStartHubName())
             .endHubName(h.getEndHubName())
             .deliveryTime(h.getDeliveryTime())
@@ -51,16 +62,17 @@ public class HubRouteCustomRepositoryImpl implements HubRouteCustomRepository {
             .build())
         .collect(Collectors.toList());
 
-        return new PageImpl<>(infoResList, pageable, total);
-
+    return new PageImpl<>(infoResList, validatedPageable, total);
   }
+
   @Override
   public Page<GetHubRouteInfoRes> searchHubRoutesByHubIds(UUID startHubId, UUID endHubId, Pageable pageable) {
     QHubRoute hubRoute = QHubRoute.hubRoute;
 
+    Pageable validatedPageable = validatePageable(pageable);
+
     JPQLQuery<HubRoute> query = queryFactory.selectFrom(hubRoute);
 
-    // 조건 추가
     if (startHubId != null && endHubId != null) {
       query = query.where(
           hubRoute.startHub.hubId.eq(startHubId)
@@ -72,18 +84,20 @@ public class HubRouteCustomRepositoryImpl implements HubRouteCustomRepository {
       query = query.where(hubRoute.endHub.hubId.eq(endHubId));
     }
 
-    // 페이징 처리
-    List<HubRoute> hubRouteList = query
-        .offset(pageable.getOffset())
-        .limit(pageable.getPageSize())
+    query = applySorting(query, validatedPageable);
+
+
+    List<HubRoute> hubRouteList = query.offset(validatedPageable.getOffset())
+        .limit(validatedPageable.getPageSize())
         .fetch();
 
     long total = query.fetchCount();
 
-    // 결과 매핑
     List<GetHubRouteInfoRes> infoResList = hubRouteList.stream()
         .map(h -> GetHubRouteInfoRes.builder()
             .hubRouteId(h.getHubId())
+            .startHubId(h.getStartHub().getHubId())
+            .endHubId(h.getEndHub().getHubId())
             .startHubName(h.getStartHubName())
             .endHubName(h.getEndHubName())
             .deliveryTime(h.getDeliveryTime())
@@ -91,6 +105,33 @@ public class HubRouteCustomRepositoryImpl implements HubRouteCustomRepository {
             .build())
         .collect(Collectors.toList());
 
-    return new PageImpl<>(infoResList, pageable, total);
+    return new PageImpl<>(infoResList, validatedPageable, total);
+  }
+
+  private Pageable validatePageable(Pageable pageable) {
+    int size = pageable.getPageSize();
+    if (size != 10 && size != 30 && size != 50) {
+      return PageRequest.of(pageable.getPageNumber(), 10, pageable.getSort());
+    }
+    return pageable;
+  }
+
+
+  private JPQLQuery<HubRoute> applySorting(JPQLQuery<HubRoute> query, Pageable pageable) {
+    return query.orderBy(pageable.getSort().stream()
+        .map(order -> {
+          if ("createdAt".equals(order.getProperty())) {
+            return order.isAscending()
+                ? QHubRoute.hubRoute.createdAt.asc()
+                : QHubRoute.hubRoute.createdAt.desc();
+          } else if ("lastModifiedAt".equals(order.getProperty())) {
+            return order.isAscending()
+                ? QHubRoute.hubRoute.lastModifiedAt.asc()
+                : QHubRoute.hubRoute.lastModifiedAt.desc();
+          } else {
+            throw new IllegalArgumentException("정렬 옵션이 잘못되었습니다: " + order.getProperty());
+          }
+        })
+        .toArray(OrderSpecifier[]::new));
   }
 }

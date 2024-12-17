@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +49,7 @@ public class HubController {
     @GetMapping
     public ResponseEntity<PagedModel<GetHubInfoRes>> getAllHubs(
         @RequestParam(required = false) String keyword,
-        Pageable pageable
+        @PageableDefault(sort = "createdAt")Pageable pageable
     ){
         Page<GetHubInfoRes> resPage =hubService.getAllHubs(keyword,pageable);
         return ResponseEntity.status(HttpStatus.OK).body(new PagedModel<>(resPage));

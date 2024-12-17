@@ -45,6 +45,7 @@ public class HubRouteService {
   private final HubRouteRepository hubRouteRepository;
   private final HubRepository hubRepository;
 
+  @Transactional
   public CreateHubRouteRes createHubRoute(
       CreateHubRouteReq createHubRouteReq,
       String requestRole
@@ -129,6 +130,7 @@ public class HubRouteService {
 
   }
 
+  @Transactional
   @Caching(evict = {
       @CacheEvict(cacheNames = "hubroutecache", key = "args[0]"),
       @CacheEvict(cacheNames = "hubrouteAllcache", allEntries = true)

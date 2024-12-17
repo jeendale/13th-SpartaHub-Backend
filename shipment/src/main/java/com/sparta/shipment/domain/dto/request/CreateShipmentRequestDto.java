@@ -21,7 +21,7 @@ public class CreateShipmentRequestDto {
     private UUID endHubId;
 
     @NotNull
-    private String shippingAddress;
+     private String shippingAddress;
 
     @NotNull
     private String receiverName;

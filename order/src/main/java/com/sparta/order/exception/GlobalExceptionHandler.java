@@ -1,11 +1,11 @@
-package com.sparta.Hub.exception;
+package com.sparta.order.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(basePackages = {"com.sparta.Hub.domain.controller"})
+@RestControllerAdvice(basePackages = {"com.sparta.order.domain.controller"})
 public class GlobalExceptionHandler {
   @ExceptionHandler({IllegalArgumentException.class})
   public ResponseEntity<RestApiException> illegalArgumentExceptionHandler(IllegalArgumentException ex) {

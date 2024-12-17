@@ -12,35 +12,58 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**, /api/v1/auth/**
+            - Path=/api/v1/users/**, /api/v1/auth/**, /user-service/**
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
         - id: ai-service
           uri: lb://ai-service
           predicates:
-            - Path=/api/v1/ai-messages/**
+            - Path=/api/v1/ai-messages/**, /ai-service/**
+          filters:
+            - RewritePath=/ai-service/(?<segment>.*), /$\{segment}
+
         - id: slack-service
           uri: lb://slack-service
           predicates:
-            - Path=/api/v1/slack/**
+            - Path=/api/v1/slack/**, /slack-service/**
+          filters:
+            - RewritePath=/slack-service/(?<segment>.*), /$\{segment}
+
         - id: hub-service
           uri: lb://hub-service
           predicates:
-            - Path=/api/v1/hubs/**, /api/v1/hubroutes/**
+            - Path=/api/v1/hubs/**, /api/v1/hubroutes/**, /hub-service/**
+          filters:
+            - RewritePath=/hub-service/(?<segment>.*), /$\{segment}
+
         - id: shipment-service
           uri: lb://shipment-service
           predicates:
             - Path=/api/v1/shipments/**, /api/v1/shipment-managers/**, /api/v1/shipment-routes/**
+          filters:
+            - RewritePath=/shipment-service/(?<segment>.*), /$\{segment}
+
         - id: company-service
           uri: lb://company-service
           predicates:
-            - Path=/api/v1/companies/**
+            - Path=/api/v1/companies/**, /company-service/**
+          filters:
+            - RewritePath=/company-service/(?<segment>.*), /$\{segment}
+
         - id: product-service
           uri: lb://product-service
           predicates:
-            - Path=/api/v1/products/**
+            - Path=/api/v1/products/**, /product-service/**
+          filters:
+            - RewritePath=/product-service/(?<segment>.*), /$\{segment}
+
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/api/v1/orders/**
+          filters:
+            - RewritePath=/order-service/(?<segment>.*), /$\{segment}
 
 service:
   jwt:
@@ -58,3 +81,31 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+    urls:
+      - name: user-service
+        url: /user-service/v3/api-docs
+
+      - name: ai-service
+        url: /ai-service/v3/api-docs
+
+      - name: slack-service
+        url: /slack-service/v3/api-docs
+
+      - name: company-service
+        url: /company-service/v3/api-docs
+
+      - name: product-service
+        url: /product-service/v3/api-docs
+
+      - name: shipment-service
+        url: /shipment-service/v3/api-docs
+
+      - name: hub-service
+        url: /hub-service/v3/api-docs
+
+      - name: order-service
+        url: /order-service/v3/api-docs

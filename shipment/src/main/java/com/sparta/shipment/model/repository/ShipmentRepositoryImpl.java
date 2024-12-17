@@ -9,7 +9,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sparta.shipment.domain.dto.response.GetShipmentResponseDto;
 import com.sparta.shipment.model.entity.QShipment;
 import com.sparta.shipment.model.entity.Shipment;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,8 +16,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 @RequiredArgsConstructor
 public class ShipmentRepositoryImpl implements ShipmentRepositoryCustom {
@@ -29,7 +28,7 @@ public class ShipmentRepositoryImpl implements ShipmentRepositoryCustom {
     public Page<GetShipmentResponseDto> searchShipments(String shipmentStatus, String receiverName,
                                                         String shippingAddress, UUID hubId, UUID shipmentManagerId,
                                                         Pageable pageable) {
-        List<OrderSpecifier<?>> orders = getAllOrderSpecifiers(pageable);
+        Pageable validatedPageable = validatePageable(pageable);
 
         // 1️⃣ count 쿼리 (transform으로 count 쿼리 최적화)
         long total = Optional.ofNullable(queryFactory
@@ -57,7 +56,21 @@ public class ShipmentRepositoryImpl implements ShipmentRepositoryCustom {
                         shipmentManagerIdEq(shipmentManagerId),
                         isNotDeleted()
                 )
-                .orderBy(orders.toArray(new OrderSpecifier[0]))
+                .orderBy(validatedPageable.getSort().stream()
+                        .map(order -> {
+                            if ("createdAt".equals(order.getProperty())) {
+                                return order.isAscending()
+                                        ? shipment.createdAt.asc()
+                                        : shipment.createdAt.desc();
+                            } else if ("lastModifiedAt".equals(order.getProperty())) {
+                                return order.isAscending()
+                                        ? shipment.lastModifiedAt.asc()
+                                        : shipment.lastModifiedAt.desc();
+                            } else {
+                                throw new IllegalArgumentException("정렬 옵션이 잘못되었습니다: " + order.getProperty());
+                            }
+                        })
+                        .toArray(OrderSpecifier[]::new))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -68,7 +81,7 @@ public class ShipmentRepositoryImpl implements ShipmentRepositoryCustom {
                 .collect(Collectors.toList());
 
         // 4️⃣ Page 객체로 반환
-        return new PageImpl<>(content, pageable, total);
+        return new PageImpl<>(content, validatedPageable, total);
     }
 
     private BooleanExpression addressContains(String address) {
@@ -98,31 +111,12 @@ public class ShipmentRepositoryImpl implements ShipmentRepositoryCustom {
         return shipment.deleted.isFalse(); // deleted가 false인 값만 가져오기
     }
 
-    private List<OrderSpecifier<?>> getAllOrderSpecifiers(Pageable pageable) {
-        List<OrderSpecifier<?>> orders = new ArrayList<>();
-
-        // 정렬 조건이 없는 경우 기본 정렬 추가
-        if (pageable.getSort().isUnsorted()) {
-            orders.add(new OrderSpecifier<>(com.querydsl.core.types.Order.DESC, shipment.createdAt));
-        } else {
-            for (Sort.Order sortOrder : pageable.getSort()) {
-                com.querydsl.core.types.Order direction = sortOrder.isAscending()
-                        ? com.querydsl.core.types.Order.ASC
-                        : com.querydsl.core.types.Order.DESC;
-
-                switch (sortOrder.getProperty()) {
-                    case "createdAt":
-                        orders.add(new OrderSpecifier<>(direction, shipment.createdAt));
-                        break;
-                    case "lastModifiedAt":
-                        orders.add(new OrderSpecifier<>(direction, shipment.lastModifiedAt));
-                        break;
-                    default:
-                        orders.add(new OrderSpecifier<>(direction, shipment.createdAt));
-                        break;
-                }
-            }
+    private Pageable validatePageable(Pageable pageable) {
+        int size = pageable.getPageSize();
+        if (size != 10 && size != 30 && size != 50) {
+            // 유효하지 않은 경우 기본값 10으로 수정
+            return PageRequest.of(pageable.getPageNumber(), 10, pageable.getSort());
         }
-        return orders;
+        return pageable;
     }
 }

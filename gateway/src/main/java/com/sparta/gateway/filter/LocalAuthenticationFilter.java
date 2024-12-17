@@ -28,7 +28,8 @@ public class LocalAuthenticationFilter implements GlobalFilter {
                         .build())
                 .build();
 
-        if (path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/signup")) {
+        if (path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/signup")
+                || path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs")) {
             return chain.filter(exchange);
         }
 

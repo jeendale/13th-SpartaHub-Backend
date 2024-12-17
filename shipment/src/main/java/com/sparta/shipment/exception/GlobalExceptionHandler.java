@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = {"com.sparta.shipment.domain.controller"})
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({IllegalArgumentException.class})
